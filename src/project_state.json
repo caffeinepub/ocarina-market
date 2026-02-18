@@ -1,0 +1,266 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 13,
+  "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
+  "architectural_notes": [
+    "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
+    "Add an admin-accessible app configuration section for managing storefront branding settings."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-add-an-admin-only-bulk-photo-upload-flow-that-accepts-multiple-images-in-one-action-and-creates-exactly-one-store-item-per-uploaded-photo",
+      "title": "Add an admin-only bulk photo upload flow that accepts multiple images in one action and creates exactly one store item per uploaded photo.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-creating-a-store-item-from-an-uploaded-photo-set-the-item-title-to-exactly-ocarina-and-generate-a-non-empty-english-description-automatically-without-using-any-external-ai-llm-service",
+      "title": "When creating a store item from an uploaded photo, set the item title to exactly \"ocarina\" and generate a non-empty English description automatically without using any external AI/LLM service.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-store-uploaded-photos-in-the-app-so-they-can-be-displayed-in-the-storefront-list-and-detail-views-including-basic-metadata-needed-to-render-content-type-and-a-stable-identifier-per-image",
+      "title": "Store uploaded photos in the app so they can be displayed in the storefront (list and detail views), including basic metadata needed to render (content type) and a stable identifier per image.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-simple-public-storefront-ui-that-lists-all-items-and-supports-viewing-an-individual-item-page-with-its-photo-title-description-and-price",
+      "title": "Build a simple public storefront UI that lists all items and supports viewing an individual item page with its photo, title, description, and price.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-pricing-fields-for-items-and-allow-the-admin-to-set-or-edit-the-price-for-each-item-in-a-single-chosen-currency-so-customers-can-purchase-items",
+      "title": "Add pricing fields for items and allow the admin to set or edit the price for each item (in a single chosen currency) so customers can purchase items.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-stripe-payments-using-a-secure-checkout-flow-that-enables-customers-to-buy-an-item-from-the-storefront-including-a-success-and-cancel-return-experience",
+      "title": "Integrate Stripe payments using a secure checkout flow that enables customers to buy an item from the storefront, including a success and cancel return experience.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-basic-inventory-protection-to-prevent-double-selling-a-single-unique-item-each-item-created-from-a-photo-is-treated-as-a-single-quantity-product-by-marking-an-item-as-sold-after-successful-payment-confirmation-within-the-app-s-supported-constraints",
+      "title": "Implement basic inventory protection to prevent double-selling a single unique item (each item created from a photo is treated as a single-quantity product) by marking an item as sold after successful payment confirmation within the app’s supported constraints.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-cohesive-folk-market-handmade-ceramics-visual-theme-earthy-warm-palette-tactile-typography-card-based-product-grid-consistently-across-pages-without-using-blue-purple-as-the-primary-color-scheme",
+      "title": "Apply a cohesive “folk market / handmade ceramics” visual theme (earthy, warm palette; tactile typography; card-based product grid) consistently across pages without using blue/purple as the primary color scheme.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-login-requirement-for-purchasing-so-that-a-user-can-start-a-stripe-checkout-session-and-complete-a-purchase-without-authenticating-with-internet-identity",
+      "title": "Remove the login requirement for purchasing so that a user can start a Stripe Checkout session and complete a purchase without authenticating with Internet Identity.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-item-detail-purchase-ui-to-reflect-guest-checkout-do-not-prompt-users-to-log-in-during-checkout-and-present-a-buy-now-call-to-action-when-the-item-is-purchasable-regardless-of-authentication-state",
+      "title": "Update the item detail purchase UI to reflect guest checkout: do not prompt users to log in during checkout, and present a “Buy Now” call-to-action when the item is purchasable regardless of authentication state.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-post-checkout-return-flow-works-for-guest-users-success-and-cancel-pages-without-requiring-an-authenticated-identity",
+      "title": "Ensure the post-checkout return flow works for guest users (success and cancel pages) without requiring an authenticated identity.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-to-fetch-and-update-the-branding-configuration-and-ensure-relevant-cached-queries-are-invalidated-refreshed-after-updates",
+      "title": "Add React Query hooks to fetch and update the branding configuration, and ensure relevant cached queries are invalidated/refreshed after updates.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-an-admin-ui-screen-for-editing-branding-settings-store-name-and-storefront-hero-content-plus-logo-hero-image-path-fields-and-link-to-it-from-the-admin-panel",
+      "title": "Create an admin UI screen for editing branding settings (store name and storefront hero content, plus logo/hero image path fields) and link to it from the Admin Panel.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-the-branding-configuration-across-the-storefront-ui-by-replacing-hard-coded-branding-strings-assets-in-the-header-and-storefront-hero-with-values-from-the-branding-configuration-with-fallbacks",
+      "title": "Apply the branding configuration across the storefront UI by replacing hard-coded branding strings/assets in the header and storefront hero with values from the branding configuration (with fallbacks).",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-mutation-hooks-for-admin-item-editing-update-item-description-and-replace-item-photo-and-ensure-relevant-cached-queries-are-invalidated-refreshed-after-updates",
+      "title": "Add React Query mutation hooks for admin item editing: update item description and replace item photo, and ensure relevant cached queries are invalidated/refreshed after updates.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-ui-so-an-admin-can-edit-an-item-s-description-and-replace-its-image-from-the-item-detail-page",
+      "title": "Update the admin UI so an admin can edit an item’s description and replace its image from the item detail page.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-guest-basket-cart-feature-that-lets-users-add-multiple-storefront-items-to-a-basket-and-review-remove-items-before-checkout",
+      "title": "Add a guest basket/cart feature that lets users add multiple storefront items to a basket and review/remove items before checkout.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-dedicated-basket-page-route-e-g-basket-or-cart-and-a-header-entry-point-that-shows-the-current-basket-item-count-for-guests-and-authenticated-users",
+      "title": "Add a dedicated Basket page/route (e.g., \"/basket\" or \"/cart\") and a header entry point that shows the current basket item count for guests and authenticated users.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-stripe-checkout-from-the-basket-for-multiple-items-in-a-single-checkout-session-using-the-existing-stripe-checkout-flow-success-and-cancel-return-pages",
+      "title": "Implement Stripe checkout from the basket for multiple items in a single checkout session, using the existing Stripe checkout flow (success and cancel return pages).",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-keep-the-storefront-purchase-ux-limited-to-buying-a-single-item-directly-from-an-item-detail-page-i-e-the-existing-buy-now-flow-remains-single-item-while-basket-checkout-is-the-only-multi-item-purchase-flow",
+      "title": "Keep the storefront purchase UX limited to buying a single item directly from an item detail page (i.e., the existing \"Buy Now\" flow remains single-item), while basket checkout is the only multi-item purchase flow.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Bulk upload multiple photos and create one store item per photo",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Auto-generate product description for each created item and set default title to 'ocarina'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Integrate Stripe payments with full checkout flow for storefront purchases",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Build a simple storefront to list items and allow customers to purchase",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Add admin app configuration/settings for branding (e.g., storefront branding options)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add a persistent app branding configuration in the backend that can be read publicly and updated by admins only.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Ensure each uploaded image results in a different (unique) auto-generated product description per item",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Allow admins to edit an existing item’s images and description after creation",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Change the automatic item description generation so that each newly created item (each uploaded image in bulk upload) receives a different, non-empty English description (i.e., descriptions should not all be the same constant string).",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Add admin-only backend operations to edit an existing item’s description after creation.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Add admin-only backend operations to replace an existing item’s image (photo) and `contentType` after creation, without changing the item’s stable `id` used in item URLs.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Add a guest basket/cart and support Stripe checkout for multiple items (while optionally keeping storefront purchase flow limited to buying one item at a time)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Ensure inventory protection (marking items as sold after confirmed payment) works for multi-item basket checkout, not only single-item checkout.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Ocarina Market",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

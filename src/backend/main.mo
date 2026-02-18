@@ -1,0 +1,360 @@
+import Map "mo:core/Map";
+import Storage "blob-storage/Storage";
+import Stripe "stripe/stripe";
+import AccessControl "authorization/access-control";
+import MixinStorage "blob-storage/Mixin";
+import MixinAuthorization "authorization/MixinAuthorization";
+import Principal "mo:core/Principal";
+import OutCall "http-outcalls/outcall";
+import Runtime "mo:core/Runtime";
+import Blob "mo:core/Blob";
+import Iter "mo:core/Iter";
+import Text "mo:core/Text";
+import List "mo:core/List";
+
+actor {
+  // Include storage and authorization components
+  include MixinStorage();
+  let accessControlState = AccessControl.initState();
+  include MixinAuthorization(accessControlState);
+
+  // Types
+  public type Item = {
+    id : Blob;
+    photo : Storage.ExternalBlob;
+    title : Text;
+    contentType : Text;
+    description : Text;
+    priceInCents : Nat;
+    sold : Bool;
+    createdBy : Principal;
+  };
+
+  public type UserProfile = {
+    name : Text;
+  };
+
+  public type Branding = {
+    appName : Text;
+    logo : Storage.ExternalBlob;
+    heroImage : Storage.ExternalBlob;
+  };
+
+  let descriptionExamples = [
+    "A beautiful handcrafted ceramic ocarina with a unique pattern and glossy finish.",
+    "This sleek instrument features a blue glaze reminiscent of oceanic waves.",
+    "The intricate designs carved on this ocarina make it a true collector's item.",
+    "A perfect blend of functionality and art, this ocarina delivers exceptional sound.",
+    "Inspired by ancient wind instruments, this piece boasts timeless craftsmanship.",
+  ];
+
+  // Persistent state
+  let items = Map.empty<Blob, Item>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
+  var stripeConfig : ?Stripe.StripeConfiguration = null;
+  var branding : ?Branding = null;
+  let baskets = Map.empty<Principal, List.List<Blob>>();
+
+  // Basket management
+  public shared ({ caller }) func addToBasket(itemId : Blob) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can add to basket");
+    };
+
+    switch (items.get(itemId)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) {
+        if (item.sold) {
+          Runtime.trap("Item is already sold");
+        };
+        let currentBasket = switch (baskets.get(caller)) {
+          case (null) { List.empty<Blob>() };
+          case (?basket) { basket };
+        };
+
+        currentBasket.add(itemId);
+        baskets.add(caller, currentBasket);
+      };
+    };
+  };
+
+  public shared ({ caller }) func removeFromBasket(itemId : Blob) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can remove from basket");
+    };
+
+    switch (baskets.get(caller)) {
+      case (null) { Runtime.trap("Basket is empty") };
+      case (?basket) {
+        let filtered = basket.filter(func(id) { id != itemId });
+        baskets.add(caller, filtered);
+      };
+    };
+  };
+
+  public query ({ caller }) func getBasket() : async {
+    itemIds : [Blob];
+    items : [Item];
+  } {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can view basket");
+    };
+
+    let itemIds = switch (baskets.get(caller)) {
+      case (null) { List.empty<Blob>().toArray() };
+      case (?basket) { basket.toArray() };
+    };
+
+    let itemList = itemIds.map(func(id) { switch (items.get(id)) { case (?item) { item }; case (null) { Runtime.trap("Item not found") } } });
+    { itemIds; items = itemList };
+  };
+
+  public shared ({ caller }) func clearBasket() : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can clear basket");
+    };
+    baskets.remove(caller);
+  };
+
+  // Stripe checkout from basket
+  public shared ({ caller }) func createCheckoutSessionFromBasket(
+    successUrl : Text,
+    cancelUrl : Text
+  ) : async Text {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can perform checkout");
+    };
+
+    switch (baskets.get(caller)) {
+      case (null) { Runtime.trap("Basket is empty") };
+      case (?basket) {
+        if (basket.isEmpty()) {
+          Runtime.trap("Basket is empty");
+        };
+
+        let itemsForCheckout = basket.toArray().map(
+          func(itemId) {
+            switch (items.get(itemId)) {
+              case (null) { Runtime.trap("Item not found") };
+              case (?item) {
+                if (item.sold) {
+                  Runtime.trap("Item is already sold");
+                };
+                {
+                  currency = "eur";
+                  productName = item.title;
+                  productDescription = item.description;
+                  priceInCents = item.priceInCents;
+                  quantity = 1;
+                };
+              };
+            };
+          }
+        );
+
+        await Stripe.createCheckoutSession(
+          getStripeConfiguration(),
+          caller,
+          itemsForCheckout,
+          successUrl,
+          cancelUrl,
+          transform,
+        );
+      };
+    };
+  };
+
+  public shared ({ caller }) func markItemsAsSold(itemIds : [Blob]) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can mark items as sold");
+    };
+
+    itemIds.forEach(
+      func(id) {
+        switch (items.get(id)) {
+          case (null) { Runtime.trap("Item not found") };
+          case (?item) {
+            let updatedItem = { item with sold = true };
+            items.add(id, updatedItem);
+          };
+        };
+      }
+    );
+  };
+
+  // User profile management
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    userProfiles.get(caller);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    userProfiles.add(caller, profile);
+  };
+
+  // Admin functions
+  public shared ({ caller }) func bulkUploadPhotos(creations : [(Storage.ExternalBlob, Text, ?Text)]) : async [Blob] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can upload photos");
+    };
+
+    creations.map(func((photo, contentType, maybeDescription)) { createStoreItem(photo, contentType, maybeDescription, caller) });
+  };
+
+  public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can configure Stripe");
+    };
+    stripeConfig := ?config;
+  };
+
+  public query func isStripeConfigured() : async Bool {
+    stripeConfig != null;
+  };
+
+  public shared ({ caller }) func setItemPrice(itemId : Blob, priceInCents : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set item prices");
+    };
+
+    switch (items.get(itemId)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) {
+        let updatedItem = { item with priceInCents };
+        items.add(itemId, updatedItem);
+      };
+    };
+  };
+
+  // Branding admin
+  public query ({ caller }) func getBranding() : async ?Branding {
+    branding;
+  };
+
+  public shared ({ caller }) func setBranding(brand : Branding) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set branding");
+    };
+    branding := ?brand;
+  };
+
+  // Admin update item description
+  public shared ({ caller }) func updateItemDescription(itemId : Blob, newDescription : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update item descriptions");
+    };
+    if (newDescription == "") {
+      Runtime.trap("Description must not be empty");
+    };
+
+    switch (items.get(itemId)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) {
+        let updatedItem = { item with description = newDescription };
+        items.add(itemId, updatedItem);
+      };
+    };
+  };
+
+  // Admin update item photo and content type
+  public shared ({ caller }) func updateItemPhoto(itemId : Blob, newPhoto : Storage.ExternalBlob, newContentType : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update item photos");
+    };
+
+    switch (items.get(itemId)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) {
+        let updatedItem = { item with photo = newPhoto; contentType = newContentType };
+        items.add(itemId, updatedItem);
+      };
+    };
+  };
+
+  // Customer functions - require user authentication for checkout
+  public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can perform checkout");
+    };
+
+    await Stripe.createCheckoutSession(
+      getStripeConfiguration(),
+      caller,
+      items,
+      successUrl,
+      cancelUrl,
+      transform,
+    );
+  };
+
+  public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can check session status");
+    };
+
+    await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
+  };
+
+  // Public query functions (storefront)
+  public query func getItem(id : Blob) : async Item {
+    switch (items.get(id)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) { item };
+    };
+  };
+
+  public query func getItems() : async [Item] {
+    items.values().toArray();
+  };
+
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
+  };
+
+  // Internal helpers
+  func createStoreItem(photo : Storage.ExternalBlob, contentType : Text, maybeDescription : ?Text, creator : Principal) : Blob {
+    let description = switch (maybeDescription) {
+      case (null) { getDefaultDescription() };
+      case (?desc) { desc };
+    };
+    if (description == "") {
+      Runtime.trap("Description must not be empty");
+    };
+
+    let item : Item = {
+      id = photo;
+      title = "ocarina";
+      photo;
+      contentType;
+      description;
+      priceInCents = 0;
+      sold = false;
+      createdBy = creator;
+    };
+    items.add(photo, item);
+    photo;
+  };
+
+  func getDefaultDescription() : Text {
+    descriptionExamples[0];
+  };
+
+  func getStripeConfiguration() : Stripe.StripeConfiguration {
+    switch (stripeConfig) {
+      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (?config) { config };
+    };
+  };
+};

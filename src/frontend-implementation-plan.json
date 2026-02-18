@@ -1,0 +1,111 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Guest basket + multi-item Stripe checkout (keep single-item Buy Now)",
+  "requirements": [
+    {
+      "id": "REQ-21",
+      "summary": "Implement a guest basket that can add, persist, review, and remove multiple items before checkout.",
+      "acceptanceCriteria": [
+        "Storefront users can add an item to a basket without logging in.",
+        "Basket contents persist across page refreshes for guests (e.g., localStorage/sessionStorage).",
+        "Basket UI shows a list of selected items with title, thumbnail, price, and sold status.",
+        "Users can remove individual items from the basket and clear the basket.",
+        "Sold items (or items with price not set) are clearly indicated in the basket UI and cannot be checked out."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useBasket.ts",
+          "operation": "create",
+          "description": "Create a guest basket state manager (React hook + localStorage persistence) that stores item IDs, exposes add/remove/clear, and derives item count; ensure it works for both guest and authenticated users without requiring login."
+        },
+        {
+          "path": "frontend/src/pages/BasketPage.tsx",
+          "operation": "create",
+          "description": "Create Basket page UI that reads basket IDs from useBasket, renders item list (title, thumbnail via ExternalBlob.getDirectURL with placeholder fallback, price, sold/price-not-set indicators), supports removing items and clearing the basket, and disables checkout for ineligible items."
+        },
+        {
+          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "operation": "modify",
+          "description": "Add an \"Add to Basket\" action that uses the new useBasket hook to add the current item ID for guests/authenticated users; ensure sold items and items without a valid price are clearly handled in the UI."
+        }
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "summary": "Add a /basket route and a global header basket entry point with an item count badge.",
+      "acceptanceCriteria": [
+        "There is a navigable Basket/Cart page route reachable from the global header.",
+        "The header displays a basket/cart button/link with an item count badge when the basket is non-empty.",
+        "Navigation works with the existing TanStack Router setup.",
+        "All user-facing text on the basket/cart UI is in English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Register a new TanStack Router route for /basket pointing to BasketPage, and wire a header Basket/Cart navigation control that shows the current basket count (from useBasket) with a badge when non-empty."
+        },
+        {
+          "path": "frontend/src/pages/BasketPage.tsx",
+          "operation": "modify",
+          "description": "Ensure all Basket page user-facing strings are English and add navigation affordances (e.g., continue shopping link back to storefront) consistent with existing TanStack Router navigation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "summary": "Enable multi-item Stripe checkout initiated from the Basket page using the existing success/cancel return pages and guest checkout behavior.",
+      "acceptanceCriteria": [
+        "From the Basket page, users can start a Stripe Checkout session that includes all eligible (not sold, priced) basket items as line items.",
+        "If any basket item becomes sold before checkout begins, the app prevents checkout and prompts the user to update the basket.",
+        "On successful return (payment success page), the storefront data is refreshed and purchased items are reflected as sold.",
+        "On cancel return (payment failure page), the basket remains unchanged.",
+        "The existing guest checkout behavior remains supported (no Internet Identity login required)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/BasketPage.tsx",
+          "operation": "modify",
+          "description": "Use the existing Stripe checkout flow (useCreateCheckoutSession from hooks/useStripe) to create a single session containing all eligible basket items as ShoppingItem line items; before starting checkout, force-refresh items data (React Query) and block checkout if any basket item is sold or has invalid price, showing an English prompt to update/remove items; redirect via window.location.href using the returned Stripe session url."
+        },
+        {
+          "path": "frontend/src/pages/PaymentSuccessPage.tsx",
+          "operation": "modify",
+          "description": "After return from Stripe success, keep the existing behavior of invalidating the items query to refresh sold status; additionally, optionally reconcile the basket client-side (e.g., prompt user to review basket or remove now-sold items) without breaking the requirement that cancel leaves basket unchanged."
+        },
+        {
+          "path": "frontend/src/pages/PaymentFailurePage.tsx",
+          "operation": "modify",
+          "description": "Ensure cancel/failed return does not mutate the guest basket state (no clear/remove) and keeps messaging/navigation consistent with basket retry behavior."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Keep single-item Buy Now on item detail pages; restrict multi-item checkout initiation to the Basket page only.",
+      "acceptanceCriteria": [
+        "Item detail pages continue to offer a single-item \"Buy Now\" checkout for that item only.",
+        "Storefront listing cards remain navigation-only (no multi-item checkout initiation directly from the listing).",
+        "Multi-item checkout initiation is available only from the Basket page."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "operation": "modify",
+          "description": "Preserve the existing single-item \"Buy Now\" flow using useCreateCheckoutSession with exactly one ShoppingItem; ensure any newly added basket-related UI does not initiate multi-item checkout from the item detail page."
+        },
+        {
+          "path": "frontend/src/components/ItemCard.tsx",
+          "operation": "modify",
+          "description": "Verify storefront listing cards remain navigation-only (no checkout/basket actions added on cards) to ensure multi-item checkout initiation remains exclusive to the Basket page."
+        },
+        {
+          "path": "frontend/src/pages/BasketPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the only place that can initiate multi-item Stripe checkout is the Basket page (place the checkout CTA and related logic exclusively here)."
+        }
+      ]
+    }
+  ]
+}
