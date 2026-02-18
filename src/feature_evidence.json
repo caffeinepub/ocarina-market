@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-branding-configuration-to-include-editable-storefront-hero-text-title-and-subtitle-and-expose-it-publicly-so-the-storefront-hero-no-longer-uses-hard-coded-strings",
-      "featureTitle": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
+      "featureId": "feature-update-the-admin-bulk-photo-upload-ui-to-only-display-successfully-uploaded-after-verifying-that-the-backend-returned-created-item-ids-and-that-the-items-can-be-fetched-afterward-otherwise-show-a-clear-english-error-message-and-keep-the-user-on-the-upload-page",
+      "featureTitle": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
       "files": [
-        "frontend/src/pages/StorefrontPage.tsx"
+        "frontend/src/pages/AdminBulkUploadPage.tsx",
+        "frontend/src/utils/bulkUploadVerification.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,74 +20,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-31"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-an-admin-friendly-logo-image-upload-control-in-branding-settings-that-uploads-an-image-file-and-saves-it-as-the-branding-logo-not-only-via-a-pasted-url-path",
-      "featureTitle": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
-      "files": [
-        "frontend/src/pages/AdminBrandingPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-32"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-editable-inputs-for-the-storefront-hero-title-and-subtitle-on-the-admin-branding-settings-page-and-persist-them-via-the-existing-branding-save-flow",
-      "featureTitle": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
-      "files": [
-        "frontend/src/pages/AdminBrandingPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-33"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-replace-the-hard-coded-hero-title-subtitle-in-the-storefront-hero-component-with-values-from-the-backend-branding-configuration-with-fallbacks",
-      "featureTitle": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
-      "files": [
-        "frontend/src/components/StorefrontHeroMedia.tsx",
-        "frontend/src/pages/StorefrontPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-34"
+        "REQ-37"
       ],
       "confidence": "high"
     }

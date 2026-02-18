@@ -1,99 +1,85 @@
 {
   "kind": "build_request",
-  "title": "Branding: upload logo image + editable storefront hero tagline",
+  "title": "Fix admin image uploads that report success but do not appear in the store",
   "projectName": "Ocarina Market",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-31",
-      "text": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
-      "target": "both",
+      "id": "REQ-35",
+      "text": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-9"
         ],
         "quotes": [
-          "let me upload image for logo in branding. and also let me edit where it says handcrafted ocarinas discover unique...."
+          "images are not being uploaded to the store, even though it says successfully uploaded"
         ]
       },
       "acceptanceCriteria": [
-        "Backend `Branding` type includes two new fields for hero text (e.g., `heroTitle` and `heroSubtitle`) stored persistently.",
-        "`getBranding` returns the new hero text fields and `setBranding` persists them (admin-only, as today).",
-        "`getStorefrontItems` response includes the hero text fields needed by the public storefront page (so the storefront can render hero text without extra authenticated calls).",
-        "Storefront hero renders the configured hero title/subtitle when set; otherwise falls back to the current default English strings: title \"Handcrafted Ocarinas\" and subtitle \"Discover unique, beautifully crafted ocarinas perfect for collectors and musicians\".",
-        "If an upgrade/migration is required due to the Branding schema change, add/adjust `backend/migration.mo` so existing deployments get safe default values for the new fields."
+        "Uploading one or more images via the existing admin bulk upload flow results in new Item records being added to the canister state.",
+        "For each newly created Item, its photo blob can be fetched via the blob-storage mechanism (i.e., the frontend can obtain a stable direct URL and successfully load the image).",
+        "If an upload cannot be persisted/retrieved, the backend call fails (traps/returns error) rather than silently creating a broken item record."
       ]
     },
     {
-      "id": "REQ-32",
-      "text": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
-      "target": "frontend",
+      "id": "REQ-36",
+      "text": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-9"
         ],
         "quotes": [
-          "let me upload image for logo in branding. and also let me edit where it says handcrafted ocarinas discover unique...."
+          "images are not being uploaded to the store, even though it says successfully uploaded"
         ]
       },
       "acceptanceCriteria": [
-        "On `/admin/branding`, provide a \"Logo\" file picker that accepts image files only (e.g., `accept=\"image/*\"`).",
-        "Selecting a logo image shows an on-page preview of the chosen image (before saving).",
-        "Saving branding after selecting a logo image uploads the file bytes and stores it as `branding.logo` (using the same blob upload approach currently used for hero media uploads).",
-        "If no logo file is selected, saving branding keeps the existing logo unless the admin explicitly sets a path/URL field to override it (if the path/URL input remains present).",
-        "After saving, the storefront header logo (in `frontend/src/App.tsx`) continues to render from `branding.logo.getDirectURL()` and displays the updated uploaded logo."
+        "Replacing an item image from the item detail admin editor results in the new image rendering on the item detail page after refresh.",
+        "After replacing an image, the item’s stable id used in URLs remains unchanged."
       ]
     },
     {
-      "id": "REQ-33",
-      "text": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
+      "id": "REQ-37",
+      "text": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-9"
         ],
         "quotes": [
-          "...let me edit where it says handcrafted ocarinas discover unique...."
+          "images are not being uploaded to the store, even though it says successfully uploaded"
         ]
       },
       "acceptanceCriteria": [
-        "On `/admin/branding`, add two labeled text inputs (English labels) for hero title and hero subtitle.",
-        "The inputs are pre-populated from the current branding values when available.",
-        "Clicking \"Save Branding Settings\" persists the hero title/subtitle along with the existing branding fields (store name, logo, hero media).",
-        "If the admin clears either field and saves, the storefront falls back to the default hero text (do not render empty hero text)."
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "text": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "...edit where it says handcrafted ocarinas discover unique...."
-        ]
-      },
-      "acceptanceCriteria": [
-        "`frontend/src/components/StorefrontHeroMedia.tsx` no longer hard-codes \"Handcrafted Ocarinas\" or the \"Discover unique...\" subtitle.",
-        "The hero title/subtitle rendered for both image and 3D hero variants are driven by branding data (as provided to the component via props from the storefront page).",
-        "When branding values are missing/empty, the component renders the same default English strings that were previously hard-coded."
+        "After the bulk upload mutation resolves, the UI performs a post-upload verification step (e.g., using the returned item IDs and/or refetching items) before showing the success toast and redirecting.",
+        "If verification fails, the UI shows an error toast (English) indicating the upload did not complete correctly, and does not mark all files as success.",
+        "On success, React Query caches related to items/storefront are refreshed/invalidated so the newly created items appear without a hard reload."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor (all logic in `backend/main.mo`).",
-    "Do not edit files under `frontend/src/components/ui` or any paths listed in `frontend.immutablePaths`.",
-    "Use English for all user-facing text."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit files under frontend/src/components/ui (compose instead).",
+    "Do not modify frontend immutable hook files listed in SYSTEM_CONTEXT (use existing hook APIs and add new hooks in allowed locations if needed)."
   ],
   "nonGoals": [
-    "Changing the existing hero media upload behavior for images/.obj/.3mf beyond what is necessary to support editable hero text.",
-    "Adding additional branding fields beyond logo upload and hero title/subtitle editing.",
-    "Introducing third-party storage/CDNs or external databases."
+    "Changing the storefront publishing workflow (published/unpublished logic) beyond what is required to make images persist and render correctly.",
+    "Adding new purchase/payment functionality.",
+    "Changing the visual theme or branding behavior unrelated to fixing image persistence/verification."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

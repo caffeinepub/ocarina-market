@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 19,
   "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
   "architectural_notes": [
     "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
@@ -8,8 +8,10 @@
     "Support additional media types in branding settings (images plus 3D model files like 3MF/OBJ) and define how they are stored and rendered publicly.",
     "Stripe payments are configured to use AUD as the storefront currency."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Image uploads report success but the uploaded images are not actually appearing/stored in the store."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-add-an-admin-only-bulk-photo-upload-flow-that-accepts-multiple-images-in-one-action-and-creates-exactly-one-store-item-per-uploaded-photo",
@@ -234,6 +236,14 @@
         "REQ-34"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-bulk-photo-upload-ui-to-only-display-successfully-uploaded-after-verifying-that-the-backend-returned-created-item-ids-and-that-the-items-can-be-fetched-afterward-otherwise-show-a-clear-english-error-message-and-keep-the-user-on-the-upload-page",
+      "title": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -355,6 +365,22 @@
       "id": "AR-22",
       "summary": "Allow admins to edit the storefront hero text/tagline (e.g., 'Handcrafted ocarinas… Discover unique…') via Branding Settings",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
+      "reqIds": [
+        "REQ-36"
+      ],
       "status": "pending"
     }
   ],

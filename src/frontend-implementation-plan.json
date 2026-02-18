@@ -1,84 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Ocarina Market — Logo upload + configurable storefront hero tagline",
+  "title": "Admin bulk upload: verify created items and image retrievability before showing success",
   "requirements": [
     {
-      "id": "REQ-31",
-      "summary": "Consume publicly exposed storefront hero title/subtitle from branding (no hard-coded strings in storefront page flow).",
+      "id": "REQ-37",
+      "summary": "Add a post-upload verification step to Admin Bulk Photo Upload so success is only shown after created items are fetchable and their images are retrievable; otherwise show a clear error and remain on the page.",
       "acceptanceCriteria": [
-        "Backend `Branding` type includes two new fields for hero text (e.g., `heroTitle` and `heroSubtitle`) stored persistently.",
-        "`getBranding` returns the new hero text fields and `setBranding` persists them (admin-only, as today).",
-        "`getStorefrontItems` response includes the hero text fields needed by the public storefront page (so the storefront can render hero text without extra authenticated calls).",
-        "Storefront hero renders the configured hero title/subtitle when set; otherwise falls back to the current default English strings: title \"Handcrafted Ocarinas\" and subtitle \"Discover unique, beautifully crafted ocarinas perfect for collectors and musicians\".",
-        "If an upgrade/migration is required due to the Branding schema change, add/adjust `backend/migration.mo` so existing deployments get safe default values for the new fields."
+        "After the bulk upload mutation resolves, the UI performs a post-upload verification step (e.g., using the returned item IDs and/or refetching items) before showing the success toast and redirecting.",
+        "If verification fails, the UI shows an error toast (English) indicating the upload did not complete correctly, and does not mark all files as success.",
+        "On success, React Query caches related to items/storefront are refreshed/invalidated so the newly created items appear without a hard reload."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/StorefrontPage.tsx",
-          "operation": "modify",
-          "description": "Pass the public hero text data returned by `useGetStorefrontItems()` (e.g., `storefrontData.heroText`) into `StorefrontHeroMedia` via props so the storefront can render configured hero title/subtitle without additional calls."
-        }
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "summary": "Add admin logo image upload with preview and persist it as branding.logo using the existing blob upload approach.",
-      "acceptanceCriteria": [
-        "On `/admin/branding`, provide a \"Logo\" file picker that accepts image files only (e.g., `accept=\"image/*\"`).",
-        "Selecting a logo image shows an on-page preview of the chosen image (before saving).",
-        "Saving branding after selecting a logo image uploads the file bytes and stores it as `branding.logo` (using the same blob upload approach currently used for hero media uploads).",
-        "If no logo file is selected, saving branding keeps the existing logo unless the admin explicitly sets a path/URL field to override it (if the path/URL input remains present).",
-        "After saving, the storefront header logo (in `frontend/src/App.tsx`) continues to render from `branding.logo.getDirectURL()` and displays the updated uploaded logo."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AdminBrandingPage.tsx",
-          "operation": "modify",
-          "description": "Add a new \"Logo\" image-only file picker (accept image/*), local preview, and save behavior that uploads bytes via the blob-storage `ExternalBlob.fromBytes(...).withUploadProgress(...)` flow (matching hero media upload). Ensure the existing logo path/URL input can still override when explicitly set, and when no file is selected, preserve the current `branding.logo` instead of resetting to default. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/utils/bulkUploadVerification.ts",
+          "operation": "create",
+          "description": "Create a small verification helper used by the Admin Bulk Photo Upload page to (1) validate the backend returned created item IDs, (2) refetch each created item via existing backend calls, and (3) sanity-check image retrievability by using the blob-storage ExternalBlob direct URL (e.g., calling getDirectURL() and performing a lightweight fetch check). Use the blob-storage component capability (ExternalBlob.getDirectURL()) to validate image rendering viability; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
           "operation": "modify",
-          "description": "Confirm header logo rendering continues to use `branding.logo.getDirectURL()` and that branding query invalidation after saving causes the updated uploaded logo to appear without requiring a hard refresh (may be documentation/comment-only or small refetch behavior adjustments if needed)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-33",
-      "summary": "Add admin inputs for hero title/subtitle and persist them via the existing branding save flow (with default fallback behavior).",
-      "acceptanceCriteria": [
-        "On `/admin/branding`, add two labeled text inputs (English labels) for hero title and hero subtitle.",
-        "The inputs are pre-populated from the current branding values when available.",
-        "Clicking \"Save Branding Settings\" persists the hero title/subtitle along with the existing branding fields (store name, logo, hero media).",
-        "If the admin clears either field and saves, the storefront falls back to the default hero text (do not render empty hero text)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AdminBrandingPage.tsx",
-          "operation": "modify",
-          "description": "Add two text inputs for hero title and hero subtitle, pre-populated from `branding.storefrontHeroText` when it is custom. Update the save payload to include `storefrontHeroText` using the union type from `frontend/src/backend.d.ts` (save as custom when both fields are non-empty; otherwise save as default) while preserving existing fields (appName, logo, heroMedia)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "summary": "Render storefront hero title/subtitle from branding data with defaults for both image and 3D hero variants.",
-      "acceptanceCriteria": [
-        "`frontend/src/components/StorefrontHeroMedia.tsx` no longer hard-codes \"Handcrafted Ocarinas\" or the \"Discover unique...\" subtitle.",
-        "The hero title/subtitle rendered for both image and 3D hero variants are driven by branding data (as provided to the component via props from the storefront page).",
-        "When branding values are missing/empty, the component renders the same default English strings that were previously hard-coded."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/StorefrontHeroMedia.tsx",
-          "operation": "modify",
-          "description": "Extend props to accept hero text data (e.g., `heroText: StorefrontHeroText | null` or pre-resolved strings) and replace hard-coded strings with resolved values that fall back to the default English title/subtitle when missing/empty; apply the same logic to both the image and 3D hero render paths."
-        },
-        {
-          "path": "frontend/src/pages/StorefrontPage.tsx",
-          "operation": "modify",
-          "description": "Wire the updated `StorefrontHeroMedia` API by passing both hero media and the hero text data from `storefrontData` so the component can render configured text with fallbacks."
+          "description": "Update the bulk upload flow to: capture the returned created item IDs from bulkUpload.mutateAsync; run a post-upload verification step (using the new helper + actor.getItem) before setting per-file status to success, showing the success toast, and redirecting; on verification failure, keep the user on the upload page, show a clear English error toast, and avoid marking all files as success. Ensure React Query item/storefront caches are invalidated/refetched only after verification passes (explicitly invalidate ['items'] and ['storefrontItems'] via QueryClient). Use blob-storage ExternalBlob direct URLs for verification; verify the component's usage instructions before implementing."
         }
       ]
     }

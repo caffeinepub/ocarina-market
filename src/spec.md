@@ -1,14 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Let admins upload a logo image and edit the storefront hero title/subtitle via Branding settings, and have the public storefront render these values instead of hard-coded text.
+**Goal:** Ensure admin image uploads and replacements actually persist image bytes in blob storage, reliably reference retrievable photo blobs, and only show success in the UI after verification.
 
 **Planned changes:**
-- Extend backend Branding data to persist `heroTitle` and `heroSubtitle`, return them via `getBranding`, and persist via `setBranding` (admin-only).
-- Include hero title/subtitle fields in the public `getStorefrontItems` response so the storefront can render hero text without authenticated calls.
-- Add migration/defaulting so existing deployments get safe defaults for the new hero text fields.
-- Update `/admin/branding` to add text inputs for hero title and hero subtitle, prefilled from current branding, saved via the existing branding save flow, and treated as fallback-to-default when cleared.
-- Update `/admin/branding` to add a logo file upload control (image-only) with preview, uploading/storing the logo using the existing blob upload approach; keep existing logo if no file is selected.
-- Update the storefront hero component to use branding-provided hero title/subtitle (with fallbacks to the current default English strings) for both image and 3D hero variants.
+- Fix backend bulk photo upload + item creation so uploaded image bytes are persisted in blob storage and new Item records reference a retrievable photo blob.
+- Fix backend single-item “Replace Item Image” flow so the new image bytes persist and the updated photo renders correctly while keeping the item’s stable URL id unchanged.
+- Update Admin Bulk Photo Upload UI to verify created item IDs/items can be fetched before showing “Successfully uploaded”; show a clear English error and stay on the page if verification fails.
+- Invalidate/refresh relevant item/storefront React Query caches on successful upload so newly created items appear without a hard reload.
 
-**User-visible outcome:** Admins can upload a new logo and edit the hero headline/subheadline in Branding Settings; the storefront header logo and hero text update accordingly, with sensible defaults when fields are unset.
+**User-visible outcome:** Admins can bulk upload items with photos and replace item images, and the images reliably appear in the admin/storefront; the UI only reports success when uploads are actually retrievable.

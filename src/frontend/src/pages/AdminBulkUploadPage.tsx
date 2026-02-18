@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useIsCallerAdmin, useBulkUploadPhotos } from '../hooks/useQueries';
+import { useActor } from '../hooks/useActor';
 import AccessDeniedScreen from '../components/AccessDeniedScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,17 +8,21 @@ import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon } from 'luci
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { verifyBulkUpload } from '../utils/bulkUploadVerification';
 
 interface UploadFile {
   file: File;
   preview: string;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'verifying' | 'success' | 'error';
   progress: number;
 }
 
 export default function AdminBulkUploadPage() {
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const { actor } = useActor();
   const bulkUpload = useBulkUploadPhotos();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
@@ -59,10 +64,16 @@ export default function AdminBulkUploadPage() {
       return;
     }
 
+    if (!actor) {
+      toast.error('Backend connection not available');
+      return;
+    }
+
     setUploadFiles(prev => prev.map(f => ({ ...f, status: 'uploading' as const })));
 
     try {
-      await bulkUpload.mutateAsync({
+      // Step 1: Upload files to backend
+      const itemIds = await bulkUpload.mutateAsync({
         files: uploadFiles.map(uf => uf.file),
         onProgress: (index, percentage) => {
           setUploadFiles(prev => prev.map((f, i) => 
@@ -71,8 +82,18 @@ export default function AdminBulkUploadPage() {
         },
       });
 
+      // Step 2: Verify uploads
+      setUploadFiles(prev => prev.map(f => ({ ...f, status: 'verifying' as const, progress: 100 })));
+
+      await verifyBulkUpload(itemIds, actor);
+
+      // Step 3: Invalidate caches to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['items'] });
+      await queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+
+      // Step 4: Mark as success
       setUploadFiles(prev => prev.map(f => ({ ...f, status: 'success' as const, progress: 100 })));
-      toast.success(`Successfully uploaded ${uploadFiles.length} item(s)`);
+      toast.success(`Successfully uploaded and verified ${uploadFiles.length} item(s)`);
       
       setTimeout(() => {
         navigate({ to: '/' });
@@ -80,7 +101,9 @@ export default function AdminBulkUploadPage() {
     } catch (error) {
       console.error('Upload error:', error);
       setUploadFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })));
-      toast.error('Failed to upload items. Please try again.');
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Upload failed: ${errorMessage}. Please try again.`);
     }
   };
 
@@ -92,7 +115,7 @@ export default function AdminBulkUploadPage() {
     }
   };
 
-  const isUploading = uploadFiles.some(f => f.status === 'uploading');
+  const isUploading = uploadFiles.some(f => f.status === 'uploading' || f.status === 'verifying');
   const allSuccess = uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'success');
 
   return (
@@ -166,6 +189,12 @@ export default function AdminBulkUploadPage() {
                         <Progress value={uf.progress} className="w-3/4" />
                       </div>
                     )}
+                    {uf.status === 'verifying' && (
+                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center rounded-lg">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+                        <p className="text-xs text-muted-foreground">Verifying...</p>
+                      </div>
+                    )}
                     {uf.status === 'success' && (
                       <div className="absolute inset-0 bg-primary/80 flex items-center justify-center rounded-lg">
                         <CheckCircle2 className="h-8 w-8 text-primary-foreground" />
@@ -193,7 +222,9 @@ export default function AdminBulkUploadPage() {
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Uploading {uploadFiles.length} item(s)...
+                  {uploadFiles.some(f => f.status === 'verifying') 
+                    ? 'Verifying uploads...' 
+                    : `Uploading ${uploadFiles.length} item(s)...`}
                 </>
               ) : (
                 <>

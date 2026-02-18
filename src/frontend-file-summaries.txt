@@ -9,7 +9,7 @@
   "frontend/src/components/StripeSetup.tsx": "Admin modal dialog for configuring Stripe payment settings including secret key and allowed countries.",
   "frontend/src/pages/StorefrontPage.tsx": "Public storefront page with hero section using StorefrontHeroMedia component (passing both hero media and hero text data) and responsive grid displaying only published items from the getStorefrontItems backend query.",
   "frontend/src/pages/ItemDetailPage.tsx": "Item detail page with single-item checkout, basket actions, and admin editing section including AdminPublishToggle, PriceEditor, and AdminItemEditor components with correct prop names for comprehensive item management.",
-  "frontend/src/pages/AdminBulkUploadPage.tsx": "Admin-only page for bulk photo upload with preview grid, progress tracking, and automatic item creation.",
+  "frontend/src/pages/AdminBulkUploadPage.tsx": "Admin-only page for bulk photo upload with preview grid, progress tracking, post-upload verification step that checks item creation and image accessibility before showing success, and proper cache invalidation.",
   "frontend/src/pages/PaymentSuccessPage.tsx": "Payment success page that refreshes storefront data, clears basket on successful payment, and works for both authenticated and guest sessions with graceful error handling.",
   "frontend/src/pages/PaymentFailurePage.tsx": "Payment cancellation page that preserves basket contents and provides navigation to basket or storefront with clear messaging that no charges were made.",
   "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations including items, storefront items (published only), user profiles, admin checks, price updates, bulk photo uploads, branding configuration, admin item editing, and new publish/unpublish mutations with proper cache invalidation.",
@@ -24,5 +24,6 @@
   "frontend/src/components/StorefrontHeroMedia.tsx": "Hero media renderer that displays either a background image or an embedded 3D viewer based on the BrandingAsset mediaKind, with configurable hero title and subtitle text that falls back to default values when not customized.",
   "frontend/src/components/Model3DViewer.tsx": "3D model viewer component using React Three Fiber with OBJLoader, OrbitControls, lighting setup, Suspense fallback, and error handling with non-blocking fallback message.",
   "frontend/src/utils/brandingMedia.ts": "Utility functions for validating hero media files (images and 3D models), inferring content types for browser-unsupported extensions, and building MediaKind metadata for BrandingAsset persistence.",
-  "frontend/src/components/AdminPublishToggle.tsx": "Admin-only UI control displaying current published/unpublished state with toggle actions, disabled state during mutations, and success/failure toasts using publish/unpublish mutations."
+  "frontend/src/components/AdminPublishToggle.tsx": "Admin-only UI control displaying current published/unpublished state with toggle actions, disabled state during mutations, and success/failure toasts using publish/unpublish mutations.",
+  "frontend/src/utils/bulkUploadVerification.ts": "Verification utility that validates uploaded items are retrievable from backend and their images are accessible via ExternalBlob direct URLs with lightweight fetch checks."
 }

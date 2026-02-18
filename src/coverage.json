@@ -1,78 +1,52 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T04:59:55.737Z",
+  "generatedAt": "2026-02-18T05:20:24.608Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-31",
-        "summary": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/StorefrontPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/StorefrontPage.tsx"
-        ]
+        "id": "REQ-35",
+        "summary": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
-        "id": "REQ-32",
-        "summary": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AdminBrandingPage.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AdminBrandingPage.tsx"
-        ]
+        "id": "REQ-36",
+        "summary": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
-        "id": "REQ-33",
-        "summary": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
+        "id": "REQ-37",
+        "summary": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminBrandingPage.tsx"
+          "frontend/src/utils/bulkUploadVerification.ts",
+          "frontend/src/pages/AdminBulkUploadPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminBrandingPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-34",
-        "summary": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/StorefrontHeroMedia.tsx",
-          "frontend/src/pages/StorefrontPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/StorefrontHeroMedia.tsx",
-          "frontend/src/pages/StorefrontPage.tsx"
+          "frontend/src/utils/bulkUploadVerification.ts",
+          "frontend/src/pages/AdminBulkUploadPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/StorefrontHeroMedia.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/pages/AdminBrandingPage.tsx",
-    "frontend/src/pages/StorefrontPage.tsx",
+    "frontend/src/pages/AdminBulkUploadPage.tsx",
+    "frontend/src/utils/bulkUploadVerification.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
