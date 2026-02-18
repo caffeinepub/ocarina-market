@@ -94,9 +94,23 @@ export interface TransformationOutput {
     body: Uint8Array;
     headers: Array<http_header>;
 }
+export interface BrandingAsset {
+    contentType: string;
+    blob: ExternalBlob;
+    mediaKind: MediaKind;
+}
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
 }
+export type MediaKind = {
+    __kind__: "image";
+    image: null;
+} | {
+    __kind__: "model3d";
+    model3d: {
+        modelType: string;
+    };
+};
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
@@ -121,15 +135,31 @@ export interface Item {
     id: Uint8Array;
     title: string;
     contentType: string;
+    published: boolean;
     createdBy: Principal;
     sold: boolean;
     description: string;
     photo: ExternalBlob;
     priceInCents: bigint;
 }
+export type StorefrontHeroText = {
+    __kind__: "custom";
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    __kind__: "default";
+    default: null;
+};
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
+}
+export interface StorefrontItems {
+    headerAsset: BrandingAsset;
+    heroText: StorefrontHeroText;
+    items: Array<Item>;
 }
 export type StripeSessionStatus = {
     __kind__: "completed";
@@ -150,7 +180,8 @@ export interface StripeConfiguration {
 export interface Branding {
     appName: string;
     logo: ExternalBlob;
-    heroImage: ExternalBlob;
+    storefrontHeroText: StorefrontHeroText;
+    heroMedia: BrandingAsset;
 }
 export interface _CaffeineStorageRefillResult {
     success?: boolean;
@@ -187,21 +218,25 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getItem(id: Uint8Array): Promise<Item>;
     getItems(): Promise<Array<Item>>;
+    getStorefrontHeroText(): Promise<StorefrontHeroText>;
+    getStorefrontItems(): Promise<StorefrontItems | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
     markItemsAsSold(itemIds: Array<Uint8Array>): Promise<void>;
+    publishItems(itemIds: Array<Uint8Array>): Promise<void>;
     removeFromBasket(itemId: Uint8Array): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setBranding(brand: Branding): Promise<void>;
     setItemPrice(itemId: Uint8Array, priceInCents: bigint): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    unpublishItems(itemIds: Array<Uint8Array>): Promise<void>;
     updateItemDescription(itemId: Uint8Array, newDescription: string): Promise<void>;
     updateItemPhoto(itemId: Uint8Array, newPhoto: ExternalBlob, newContentType: string): Promise<void>;
 }
-import type { Branding as _Branding, ExternalBlob as _ExternalBlob, Item as _Item, StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { Branding as _Branding, BrandingAsset as _BrandingAsset, ExternalBlob as _ExternalBlob, Item as _Item, MediaKind as _MediaKind, StorefrontHeroText as _StorefrontHeroText, StorefrontItems as _StorefrontItems, StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -421,28 +456,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n22(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n22(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n23(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n29(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n23(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n29(this._uploadFile, this._downloadFile, result);
         }
     }
     async getItem(arg0: Uint8Array): Promise<Item> {
@@ -473,32 +508,60 @@ export class Backend implements backendInterface {
             return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getStorefrontHeroText(): Promise<StorefrontHeroText> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getStorefrontHeroText();
+                return from_candid_StorefrontHeroText_n22(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getStorefrontHeroText();
+            return from_candid_StorefrontHeroText_n22(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getStorefrontItems(): Promise<StorefrontItems | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getStorefrontItems();
+                return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getStorefrontItems();
+            return from_candid_opt_n31(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getStripeSessionStatus(arg0: string): Promise<StripeSessionStatus> {
         if (this.processError) {
             try {
                 const result = await this.actor.getStripeSessionStatus(arg0);
-                return from_candid_StripeSessionStatus_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_StripeSessionStatus_n34(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getStripeSessionStatus(arg0);
-            return from_candid_StripeSessionStatus_n25(this._uploadFile, this._downloadFile, result);
+            return from_candid_StripeSessionStatus_n34(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n22(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n22(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -543,6 +606,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async publishItems(arg0: Array<Uint8Array>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.publishItems(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.publishItems(arg0);
+            return result;
+        }
+    }
     async removeFromBasket(arg0: Uint8Array): Promise<void> {
         if (this.processError) {
             try {
@@ -574,14 +651,14 @@ export class Backend implements backendInterface {
     async setBranding(arg0: Branding): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.setBranding(await to_candid_Branding_n29(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.setBranding(await to_candid_Branding_n38(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setBranding(await to_candid_Branding_n29(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.setBranding(await to_candid_Branding_n38(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -627,6 +704,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async unpublishItems(arg0: Array<Uint8Array>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.unpublishItems(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.unpublishItems(arg0);
+            return result;
+        }
+    }
     async updateItemDescription(arg0: Uint8Array, arg1: string): Promise<void> {
         if (this.processError) {
             try {
@@ -656,6 +747,9 @@ export class Backend implements backendInterface {
         }
     }
 }
+async function from_candid_BrandingAsset_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BrandingAsset): Promise<BrandingAsset> {
+    return await from_candid_record_n25(_uploadFile, _downloadFile, value);
+}
 async function from_candid_Branding_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Branding): Promise<Branding> {
     return await from_candid_record_n21(_uploadFile, _downloadFile, value);
 }
@@ -665,11 +759,20 @@ async function from_candid_ExternalBlob_n18(_uploadFile: (file: ExternalBlob) =>
 async function from_candid_Item_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Item): Promise<Item> {
     return await from_candid_record_n17(_uploadFile, _downloadFile, value);
 }
-function from_candid_StripeSessionStatus_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
-    return from_candid_variant_n26(_uploadFile, _downloadFile, value);
+function from_candid_MediaKind_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MediaKind): MediaKind {
+    return from_candid_variant_n27(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n24(_uploadFile, _downloadFile, value);
+function from_candid_StorefrontHeroText_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StorefrontHeroText): StorefrontHeroText {
+    return from_candid_variant_n23(_uploadFile, _downloadFile, value);
+}
+async function from_candid_StorefrontItems_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StorefrontItems): Promise<StorefrontItems> {
+    return await from_candid_record_n33(_uploadFile, _downloadFile, value);
+}
+function from_candid_StripeSessionStatus_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
+    return from_candid_variant_n35(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n30(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
@@ -677,10 +780,13 @@ function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: Externa
 async function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Branding]): Promise<Branding | null> {
     return value.length === 0 ? null : await from_candid_Branding_n20(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+async function from_candid_opt_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_StorefrontItems]): Promise<StorefrontItems | null> {
+    return value.length === 0 ? null : await from_candid_StorefrontItems_n32(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -705,6 +811,7 @@ async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promi
     id: Uint8Array;
     title: string;
     contentType: string;
+    published: boolean;
     createdBy: Principal;
     sold: boolean;
     description: string;
@@ -714,6 +821,7 @@ async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promi
     id: Uint8Array;
     title: string;
     contentType: string;
+    published: boolean;
     createdBy: Principal;
     sold: boolean;
     description: string;
@@ -724,6 +832,7 @@ async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promi
         id: value.id,
         title: value.title,
         contentType: value.contentType,
+        published: value.published,
         createdBy: value.createdBy,
         sold: value.sold,
         description: value.description,
@@ -734,19 +843,52 @@ async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promi
 async function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     appName: string;
     logo: _ExternalBlob;
-    heroImage: _ExternalBlob;
+    storefrontHeroText: _StorefrontHeroText;
+    heroMedia: _BrandingAsset;
 }): Promise<{
     appName: string;
     logo: ExternalBlob;
-    heroImage: ExternalBlob;
+    storefrontHeroText: StorefrontHeroText;
+    heroMedia: BrandingAsset;
 }> {
     return {
         appName: value.appName,
         logo: await from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, value.logo),
-        heroImage: await from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, value.heroImage)
+        storefrontHeroText: from_candid_StorefrontHeroText_n22(_uploadFile, _downloadFile, value.storefrontHeroText),
+        heroMedia: await from_candid_BrandingAsset_n24(_uploadFile, _downloadFile, value.heroMedia)
     };
 }
-function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    contentType: string;
+    blob: _ExternalBlob;
+    mediaKind: _MediaKind;
+}): Promise<{
+    contentType: string;
+    blob: ExternalBlob;
+    mediaKind: MediaKind;
+}> {
+    return {
+        contentType: value.contentType,
+        blob: await from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, value.blob),
+        mediaKind: from_candid_MediaKind_n26(_uploadFile, _downloadFile, value.mediaKind)
+    };
+}
+async function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    headerAsset: _BrandingAsset;
+    heroText: _StorefrontHeroText;
+    items: Array<_Item>;
+}): Promise<{
+    headerAsset: BrandingAsset;
+    heroText: StorefrontHeroText;
+    items: Array<Item>;
+}> {
+    return {
+        headerAsset: await from_candid_BrandingAsset_n24(_uploadFile, _downloadFile, value.headerAsset),
+        heroText: from_candid_StorefrontHeroText_n22(_uploadFile, _downloadFile, value.heroText),
+        items: await from_candid_vec_n15(_uploadFile, _downloadFile, value.items)
+    };
+}
+function from_candid_record_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     userPrincipal: [] | [string];
     response: string;
 }): {
@@ -754,7 +896,7 @@ function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uin
     response: string;
 } {
     return {
-        userPrincipal: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.userPrincipal)),
+        userPrincipal: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.userPrincipal)),
         response: value.response
     };
 }
@@ -770,7 +912,55 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    default: null;
+}): {
+    __kind__: "custom";
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    __kind__: "default";
+    default: null;
+} {
+    return "custom" in value ? {
+        __kind__: "custom",
+        custom: value.custom
+    } : "default" in value ? {
+        __kind__: "default",
+        default: value.default
+    } : value;
+}
+function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    image: null;
+} | {
+    model3d: {
+        modelType: string;
+    };
+}): {
+    __kind__: "image";
+    image: null;
+} | {
+    __kind__: "model3d";
+    model3d: {
+        modelType: string;
+    };
+} {
+    return "image" in value ? {
+        __kind__: "image",
+        image: value.image
+    } : "model3d" in value ? {
+        __kind__: "model3d",
+        model3d: value.model3d
+    } : value;
+}
+function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -779,7 +969,7 @@ function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     completed: {
         userPrincipal: [] | [string];
         response: string;
@@ -802,7 +992,7 @@ function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } {
     return "completed" in value ? {
         __kind__: "completed",
-        completed: from_candid_record_n27(_uploadFile, _downloadFile, value.completed)
+        completed: from_candid_record_n36(_uploadFile, _downloadFile, value.completed)
     } : "failed" in value ? {
         __kind__: "failed",
         failed: value.failed
@@ -811,11 +1001,20 @@ function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Ui
 async function from_candid_vec_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Item>): Promise<Array<Item>> {
     return await Promise.all(value.map(async (x)=>await from_candid_Item_n16(_uploadFile, _downloadFile, x)));
 }
-async function to_candid_Branding_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Branding): Promise<_Branding> {
-    return await to_candid_record_n30(_uploadFile, _downloadFile, value);
+async function to_candid_BrandingAsset_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BrandingAsset): Promise<_BrandingAsset> {
+    return await to_candid_record_n43(_uploadFile, _downloadFile, value);
+}
+async function to_candid_Branding_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Branding): Promise<_Branding> {
+    return await to_candid_record_n39(_uploadFile, _downloadFile, value);
 }
 async function to_candid_ExternalBlob_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
+}
+function to_candid_MediaKind_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: MediaKind): _MediaKind {
+    return to_candid_variant_n45(_uploadFile, _downloadFile, value);
+}
+function to_candid_StorefrontHeroText_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: StorefrontHeroText): _StorefrontHeroText {
+    return to_candid_variant_n41(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n9(_uploadFile, _downloadFile, value);
@@ -838,19 +1037,37 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-async function to_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     appName: string;
     logo: ExternalBlob;
-    heroImage: ExternalBlob;
+    storefrontHeroText: StorefrontHeroText;
+    heroMedia: BrandingAsset;
 }): Promise<{
     appName: string;
     logo: _ExternalBlob;
-    heroImage: _ExternalBlob;
+    storefrontHeroText: _StorefrontHeroText;
+    heroMedia: _BrandingAsset;
 }> {
     return {
         appName: value.appName,
         logo: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.logo),
-        heroImage: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.heroImage)
+        storefrontHeroText: to_candid_StorefrontHeroText_n40(_uploadFile, _downloadFile, value.storefrontHeroText),
+        heroMedia: await to_candid_BrandingAsset_n42(_uploadFile, _downloadFile, value.heroMedia)
+    };
+}
+async function to_candid_record_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    contentType: string;
+    blob: ExternalBlob;
+    mediaKind: MediaKind;
+}): Promise<{
+    contentType: string;
+    blob: _ExternalBlob;
+    mediaKind: _MediaKind;
+}> {
+    return {
+        contentType: value.contentType,
+        blob: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.blob),
+        mediaKind: to_candid_MediaKind_n44(_uploadFile, _downloadFile, value.mediaKind)
     };
 }
 async function to_candid_tuple_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [ExternalBlob, string, string | null]): Promise<[_ExternalBlob, string, [] | [string]]> {
@@ -859,6 +1076,50 @@ async function to_candid_tuple_n11(_uploadFile: (file: ExternalBlob) => Promise<
         value[1],
         to_candid_opt_n13(_uploadFile, _downloadFile, value[2])
     ];
+}
+function to_candid_variant_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    __kind__: "custom";
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    __kind__: "default";
+    default: null;
+}): {
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    default: null;
+} {
+    return value.__kind__ === "custom" ? {
+        custom: value.custom
+    } : value.__kind__ === "default" ? {
+        default: value.default
+    } : value;
+}
+function to_candid_variant_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    __kind__: "image";
+    image: null;
+} | {
+    __kind__: "model3d";
+    model3d: {
+        modelType: string;
+    };
+}): {
+    image: null;
+} | {
+    model3d: {
+        modelType: string;
+    };
+} {
+    return value.__kind__ === "image" ? {
+        image: value.image
+    } : value.__kind__ === "model3d" ? {
+        model3d: value.model3d
+    } : value;
 }
 function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;

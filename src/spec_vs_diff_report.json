@@ -1,39 +1,87 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T04:20:14.116Z",
-  "summary": "Diff adds a frontend guest basket stored in localStorage, a /basket route with header icon+count, and a new Stripe checkout-from-basket flow. However, backend changes introduce authenticated-user basket state and (likely) authenticated basket checkout, which conflicts with the guest checkout requirement and is not requested.",
+  "generatedAt": "2026-02-18T04:59:55.733Z",
+  "summary": "Diff adds a new persistent branding field for storefront hero text (via a `StorefrontHeroText` variant), includes a migration to default existing deployments, updates the storefront hero component to render configurable text with English fallbacks, and adds admin-page state/handlers for logo upload + preview and hero title/subtitle editing. However, several acceptance-criteria details cannot be confirmed from the truncated diff (notably the actual backend method implementations and the admin page JSX wiring/attributes).",
   "missing_requirements": [
     {
-      "id": "REQ-23",
-      "requirement": "The existing guest checkout behavior remains supported (no Internet Identity login required) for basket checkout.",
-      "reason": "Backend implementation shown for basket and basket checkout is gated behind an authorization check for #user permissions, which implies authentication is required to add/view/clear basket and to initiate checkout-from-basket.",
+      "id": "REQ-31",
+      "requirement": "`getBranding` returns the new hero text fields and `setBranding` persists them (admin-only, as today).",
+      "reason": "The diff shows the new types (`Branding` includes `storefrontHeroText`) and migration wiring, but the implementations of `getBranding`/`setBranding` are not visible in the provided truncated `backend/main.mo`, so persistence and access control for the new field cannot be verified from the evidence.",
       "evidence": [
         "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "requirement": "`getStorefrontItems` response includes the hero text fields needed by the public storefront page.",
+      "reason": "A `StorefrontItems` type with `heroText` exists, and the frontend consumes `storefrontData?.heroText`, but the actual `getStorefrontItems` function response composition is not shown in the truncated backend diff.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/StorefrontPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "requirement": "On `/admin/branding`, provide a \"Logo\" file picker that accepts image files only (e.g., `accept=\"image/*\"`).",
+      "reason": "The handler enforces image MIME types in code, but the JSX for the input element (including the `accept` attribute and label text) is not included in the truncated `AdminBrandingPage.tsx` diff summary, so this specific AC cannot be confirmed.",
+      "evidence": [
+        "frontend/src/pages/AdminBrandingPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "requirement": "Saving branding after selecting a logo image uploads the file bytes and stores it as `branding.logo`.",
+      "reason": "The save handler begins constructing `logoBlob` via `ExternalBlob.fromBytes(...)`, but the critical portion where the final branding payload is assembled and passed to `useSetBranding()` is truncated, so it cannot be verified that the uploaded blob is actually persisted into `branding.logo`.",
+      "evidence": [
+        "frontend/src/pages/AdminBrandingPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "requirement": "On `/admin/branding`, add two labeled text inputs (English labels) for hero title and hero subtitle.",
+      "reason": "State is added (`heroTitle`, `heroSubtitle`) and values are loaded from `branding.storefrontHeroText`, but the actual rendered labeled input controls are not visible due to truncation of the admin page file.",
+      "evidence": [
+        "frontend/src/pages/AdminBrandingPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "requirement": "Clicking \"Save Branding Settings\" persists the hero title/subtitle along with existing branding fields.",
+      "reason": "The save routine is truncated before showing how `heroTitle`/`heroSubtitle` are encoded into the branding payload and persisted via the existing save flow.",
+      "evidence": [
+        "frontend/src/pages/AdminBrandingPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "requirement": "If the admin clears either field and saves, the storefront falls back to the default hero text (do not render empty hero text).",
+      "reason": "The storefront component includes fallback behavior when `heroText` is `default` or when `custom.title/subtitle` are falsy, but the diff does not show that the admin save flow converts cleared inputs into a non-empty-safe representation (e.g., using `#default` instead of `#custom` with empty strings). This cannot be verified from the truncated save logic.",
+      "evidence": [
+        "frontend/src/components/StorefrontHeroMedia.tsx",
+        "frontend/src/pages/AdminBrandingPage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Backend-persisted per-user basket with add/remove/get/clear endpoints and authorization gating.",
-      "reason": "BuildRequest only requires a guest basket that persists across refreshes (e.g., localStorage/sessionStorage) and does not require authentication; it does not request a backend basket feature or authenticated-only basket management.",
+      "description": "Introduced `StorefrontHeroText` as a tagged variant (`#default` | `#custom { title; subtitle }`) instead of adding two flat `heroTitle` / `heroSubtitle` fields directly on `Branding`.",
+      "reason": "The BuildRequest specifically called for adding two new fields for hero text (example: `heroTitle` and `heroSubtitle`). The diff implements a different schema shape (an enum/variant) which is more than a direct addition of two fields, even though it still represents title/subtitle.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo",
+        "backend/migration.mo",
+        "frontend/src/components/StorefrontHeroMedia.tsx"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.56,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/hooks/useBasket.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useStripe.ts",
-    "frontend/src/pages/BasketPage.tsx",
-    "frontend/src/pages/ItemDetailPage.tsx",
-    "frontend/src/pages/PaymentFailurePage.tsx",
-    "frontend/src/pages/PaymentSuccessPage.tsx",
+    "frontend/src/components/StorefrontHeroMedia.tsx",
+    "frontend/src/pages/AdminBrandingPage.tsx",
+    "frontend/src/pages/StorefrontPage.tsx",
     "project_state.json"
   ]
 }

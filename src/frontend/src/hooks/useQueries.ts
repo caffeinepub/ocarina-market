@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { Item, UserProfile, Branding } from '../backend';
+import { Item, UserProfile, Branding, StorefrontItems } from '../backend';
 
 export function useGetItems() {
   const { actor, isFetching } = useActor();
@@ -10,6 +10,19 @@ export function useGetItems() {
     queryFn: async () => {
       if (!actor) return [];
       return actor.getItems();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetStorefrontItems() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<StorefrontItems | null>({
+    queryKey: ['storefrontItems'],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getStorefrontItems();
     },
     enabled: !!actor && !isFetching,
   });
@@ -110,6 +123,7 @@ export function useSetItemPrice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
     },
   });
 }
@@ -126,6 +140,7 @@ export function useUpdateItemDescription() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
     },
   });
 }
@@ -149,6 +164,7 @@ export function useUpdateItemPhoto() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
     },
   });
 }
@@ -189,6 +205,7 @@ export function useBulkUploadPhotos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
     },
   });
 }
@@ -217,6 +234,41 @@ export function useSetBranding() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branding'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+    },
+  });
+}
+
+export function usePublishItems() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemIds: Uint8Array[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.publishItems(itemIds);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+    },
+  });
+}
+
+export function useUnpublishItems() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemIds: Uint8Array[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.unpublishItems(itemIds);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
     },
   });
 }

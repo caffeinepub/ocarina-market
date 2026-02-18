@@ -1,99 +1,78 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T04:20:14.121Z",
+  "generatedAt": "2026-02-18T04:59:55.737Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
+    "total": 4,
     "implemented": 4,
     "items": [
       {
-        "id": "REQ-21",
-        "summary": "Add a guest basket/cart feature that lets users add multiple storefront items to a basket and review/remove items before checkout.",
+        "id": "REQ-31",
+        "summary": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useBasket.ts",
-          "frontend/src/pages/BasketPage.tsx",
-          "frontend/src/pages/ItemDetailPage.tsx"
+          "frontend/src/pages/StorefrontPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useBasket.ts",
-          "frontend/src/pages/BasketPage.tsx",
-          "frontend/src/pages/ItemDetailPage.tsx"
+          "frontend/src/pages/StorefrontPage.tsx"
         ]
       },
       {
-        "id": "REQ-22",
-        "summary": "Add a dedicated Basket page/route (e.g., \"/basket\" or \"/cart\") and a header entry point that shows the current basket item count for guests and authenticated users.",
+        "id": "REQ-32",
+        "summary": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/pages/BasketPage.tsx"
+          "frontend/src/pages/AdminBrandingPage.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/pages/BasketPage.tsx"
+          "frontend/src/pages/AdminBrandingPage.tsx"
         ]
       },
       {
-        "id": "REQ-23",
-        "summary": "Implement Stripe checkout from the basket for multiple items in a single checkout session, using the existing Stripe checkout flow (success and cancel return pages).",
+        "id": "REQ-33",
+        "summary": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/BasketPage.tsx",
-          "frontend/src/pages/PaymentSuccessPage.tsx",
-          "frontend/src/pages/PaymentFailurePage.tsx"
+          "frontend/src/pages/AdminBrandingPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/BasketPage.tsx",
-          "frontend/src/pages/PaymentSuccessPage.tsx",
-          "frontend/src/pages/PaymentFailurePage.tsx"
+          "frontend/src/pages/AdminBrandingPage.tsx"
         ]
       },
       {
-        "id": "REQ-24",
-        "summary": "Ensure inventory protection (marking items as sold after confirmed payment) works for multi-item basket checkout, not only single-item checkout.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-25",
-        "summary": "Keep the storefront purchase UX limited to buying a single item directly from an item detail page (i.e., the existing \"Buy Now\" flow remains single-item), while basket checkout is the only multi-item purchase flow.",
+        "id": "REQ-34",
+        "summary": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ItemDetailPage.tsx",
-          "frontend/src/components/ItemCard.tsx",
-          "frontend/src/pages/BasketPage.tsx"
+          "frontend/src/components/StorefrontHeroMedia.tsx",
+          "frontend/src/pages/StorefrontPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ItemDetailPage.tsx",
-          "frontend/src/pages/BasketPage.tsx"
+          "frontend/src/components/StorefrontHeroMedia.tsx",
+          "frontend/src/pages/StorefrontPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/StorefrontHeroMedia.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useBasket.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useStripe.ts",
-    "frontend/src/pages/BasketPage.tsx",
-    "frontend/src/pages/ItemDetailPage.tsx",
-    "frontend/src/pages/PaymentFailurePage.tsx",
-    "frontend/src/pages/PaymentSuccessPage.tsx",
+    "frontend/src/pages/AdminBrandingPage.tsx",
+    "frontend/src/pages/StorefrontPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

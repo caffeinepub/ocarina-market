@@ -1,109 +1,84 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Guest basket + multi-item Stripe checkout (keep single-item Buy Now)",
+  "title": "Ocarina Market — Logo upload + configurable storefront hero tagline",
   "requirements": [
     {
-      "id": "REQ-21",
-      "summary": "Implement a guest basket that can add, persist, review, and remove multiple items before checkout.",
+      "id": "REQ-31",
+      "summary": "Consume publicly exposed storefront hero title/subtitle from branding (no hard-coded strings in storefront page flow).",
       "acceptanceCriteria": [
-        "Storefront users can add an item to a basket without logging in.",
-        "Basket contents persist across page refreshes for guests (e.g., localStorage/sessionStorage).",
-        "Basket UI shows a list of selected items with title, thumbnail, price, and sold status.",
-        "Users can remove individual items from the basket and clear the basket.",
-        "Sold items (or items with price not set) are clearly indicated in the basket UI and cannot be checked out."
+        "Backend `Branding` type includes two new fields for hero text (e.g., `heroTitle` and `heroSubtitle`) stored persistently.",
+        "`getBranding` returns the new hero text fields and `setBranding` persists them (admin-only, as today).",
+        "`getStorefrontItems` response includes the hero text fields needed by the public storefront page (so the storefront can render hero text without extra authenticated calls).",
+        "Storefront hero renders the configured hero title/subtitle when set; otherwise falls back to the current default English strings: title \"Handcrafted Ocarinas\" and subtitle \"Discover unique, beautifully crafted ocarinas perfect for collectors and musicians\".",
+        "If an upgrade/migration is required due to the Branding schema change, add/adjust `backend/migration.mo` so existing deployments get safe default values for the new fields."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useBasket.ts",
-          "operation": "create",
-          "description": "Create a guest basket state manager (React hook + localStorage persistence) that stores item IDs, exposes add/remove/clear, and derives item count; ensure it works for both guest and authenticated users without requiring login."
-        },
-        {
-          "path": "frontend/src/pages/BasketPage.tsx",
-          "operation": "create",
-          "description": "Create Basket page UI that reads basket IDs from useBasket, renders item list (title, thumbnail via ExternalBlob.getDirectURL with placeholder fallback, price, sold/price-not-set indicators), supports removing items and clearing the basket, and disables checkout for ineligible items."
-        },
-        {
-          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "path": "frontend/src/pages/StorefrontPage.tsx",
           "operation": "modify",
-          "description": "Add an \"Add to Basket\" action that uses the new useBasket hook to add the current item ID for guests/authenticated users; ensure sold items and items without a valid price are clearly handled in the UI."
+          "description": "Pass the public hero text data returned by `useGetStorefrontItems()` (e.g., `storefrontData.heroText`) into `StorefrontHeroMedia` via props so the storefront can render configured hero title/subtitle without additional calls."
         }
       ]
     },
     {
-      "id": "REQ-22",
-      "summary": "Add a /basket route and a global header basket entry point with an item count badge.",
+      "id": "REQ-32",
+      "summary": "Add admin logo image upload with preview and persist it as branding.logo using the existing blob upload approach.",
       "acceptanceCriteria": [
-        "There is a navigable Basket/Cart page route reachable from the global header.",
-        "The header displays a basket/cart button/link with an item count badge when the basket is non-empty.",
-        "Navigation works with the existing TanStack Router setup.",
-        "All user-facing text on the basket/cart UI is in English."
+        "On `/admin/branding`, provide a \"Logo\" file picker that accepts image files only (e.g., `accept=\"image/*\"`).",
+        "Selecting a logo image shows an on-page preview of the chosen image (before saving).",
+        "Saving branding after selecting a logo image uploads the file bytes and stores it as `branding.logo` (using the same blob upload approach currently used for hero media uploads).",
+        "If no logo file is selected, saving branding keeps the existing logo unless the admin explicitly sets a path/URL field to override it (if the path/URL input remains present).",
+        "After saving, the storefront header logo (in `frontend/src/App.tsx`) continues to render from `branding.logo.getDirectURL()` and displays the updated uploaded logo."
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminBrandingPage.tsx",
+          "operation": "modify",
+          "description": "Add a new \"Logo\" image-only file picker (accept image/*), local preview, and save behavior that uploads bytes via the blob-storage `ExternalBlob.fromBytes(...).withUploadProgress(...)` flow (matching hero media upload). Ensure the existing logo path/URL input can still override when explicitly set, and when no file is selected, preserve the current `branding.logo` instead of resetting to default. Verify the component's usage instructions before implementing."
+        },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Register a new TanStack Router route for /basket pointing to BasketPage, and wire a header Basket/Cart navigation control that shows the current basket count (from useBasket) with a badge when non-empty."
-        },
-        {
-          "path": "frontend/src/pages/BasketPage.tsx",
-          "operation": "modify",
-          "description": "Ensure all Basket page user-facing strings are English and add navigation affordances (e.g., continue shopping link back to storefront) consistent with existing TanStack Router navigation."
+          "description": "Confirm header logo rendering continues to use `branding.logo.getDirectURL()` and that branding query invalidation after saving causes the updated uploaded logo to appear without requiring a hard refresh (may be documentation/comment-only or small refetch behavior adjustments if needed)."
         }
       ]
     },
     {
-      "id": "REQ-23",
-      "summary": "Enable multi-item Stripe checkout initiated from the Basket page using the existing success/cancel return pages and guest checkout behavior.",
+      "id": "REQ-33",
+      "summary": "Add admin inputs for hero title/subtitle and persist them via the existing branding save flow (with default fallback behavior).",
       "acceptanceCriteria": [
-        "From the Basket page, users can start a Stripe Checkout session that includes all eligible (not sold, priced) basket items as line items.",
-        "If any basket item becomes sold before checkout begins, the app prevents checkout and prompts the user to update the basket.",
-        "On successful return (payment success page), the storefront data is refreshed and purchased items are reflected as sold.",
-        "On cancel return (payment failure page), the basket remains unchanged.",
-        "The existing guest checkout behavior remains supported (no Internet Identity login required)."
+        "On `/admin/branding`, add two labeled text inputs (English labels) for hero title and hero subtitle.",
+        "The inputs are pre-populated from the current branding values when available.",
+        "Clicking \"Save Branding Settings\" persists the hero title/subtitle along with the existing branding fields (store name, logo, hero media).",
+        "If the admin clears either field and saves, the storefront falls back to the default hero text (do not render empty hero text)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/BasketPage.tsx",
+          "path": "frontend/src/pages/AdminBrandingPage.tsx",
           "operation": "modify",
-          "description": "Use the existing Stripe checkout flow (useCreateCheckoutSession from hooks/useStripe) to create a single session containing all eligible basket items as ShoppingItem line items; before starting checkout, force-refresh items data (React Query) and block checkout if any basket item is sold or has invalid price, showing an English prompt to update/remove items; redirect via window.location.href using the returned Stripe session url."
-        },
-        {
-          "path": "frontend/src/pages/PaymentSuccessPage.tsx",
-          "operation": "modify",
-          "description": "After return from Stripe success, keep the existing behavior of invalidating the items query to refresh sold status; additionally, optionally reconcile the basket client-side (e.g., prompt user to review basket or remove now-sold items) without breaking the requirement that cancel leaves basket unchanged."
-        },
-        {
-          "path": "frontend/src/pages/PaymentFailurePage.tsx",
-          "operation": "modify",
-          "description": "Ensure cancel/failed return does not mutate the guest basket state (no clear/remove) and keeps messaging/navigation consistent with basket retry behavior."
+          "description": "Add two text inputs for hero title and hero subtitle, pre-populated from `branding.storefrontHeroText` when it is custom. Update the save payload to include `storefrontHeroText` using the union type from `frontend/src/backend.d.ts` (save as custom when both fields are non-empty; otherwise save as default) while preserving existing fields (appName, logo, heroMedia)."
         }
       ]
     },
     {
-      "id": "REQ-25",
-      "summary": "Keep single-item Buy Now on item detail pages; restrict multi-item checkout initiation to the Basket page only.",
+      "id": "REQ-34",
+      "summary": "Render storefront hero title/subtitle from branding data with defaults for both image and 3D hero variants.",
       "acceptanceCriteria": [
-        "Item detail pages continue to offer a single-item \"Buy Now\" checkout for that item only.",
-        "Storefront listing cards remain navigation-only (no multi-item checkout initiation directly from the listing).",
-        "Multi-item checkout initiation is available only from the Basket page."
+        "`frontend/src/components/StorefrontHeroMedia.tsx` no longer hard-codes \"Handcrafted Ocarinas\" or the \"Discover unique...\" subtitle.",
+        "The hero title/subtitle rendered for both image and 3D hero variants are driven by branding data (as provided to the component via props from the storefront page).",
+        "When branding values are missing/empty, the component renders the same default English strings that were previously hard-coded."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "path": "frontend/src/components/StorefrontHeroMedia.tsx",
           "operation": "modify",
-          "description": "Preserve the existing single-item \"Buy Now\" flow using useCreateCheckoutSession with exactly one ShoppingItem; ensure any newly added basket-related UI does not initiate multi-item checkout from the item detail page."
+          "description": "Extend props to accept hero text data (e.g., `heroText: StorefrontHeroText | null` or pre-resolved strings) and replace hard-coded strings with resolved values that fall back to the default English title/subtitle when missing/empty; apply the same logic to both the image and 3D hero render paths."
         },
         {
-          "path": "frontend/src/components/ItemCard.tsx",
+          "path": "frontend/src/pages/StorefrontPage.tsx",
           "operation": "modify",
-          "description": "Verify storefront listing cards remain navigation-only (no checkout/basket actions added on cards) to ensure multi-item checkout initiation remains exclusive to the Basket page."
-        },
-        {
-          "path": "frontend/src/pages/BasketPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the only place that can initiate multi-item Stripe checkout is the Basket page (place the checkout CTA and related logic exclusively here)."
+          "description": "Wire the updated `StorefrontHeroMedia` API by passing both hero media and the hero text data from `storefrontData` so the component can render configured text with fallbacks."
         }
       ]
     }

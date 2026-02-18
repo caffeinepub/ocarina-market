@@ -3,17 +3,19 @@ import Storage "blob-storage/Storage";
 import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
+import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
-import Principal "mo:core/Principal";
 import OutCall "http-outcalls/outcall";
+import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Blob "mo:core/Blob";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import List "mo:core/List";
 
+(with migration = Migration.run)
 actor {
-  // Include storage and authorization components
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -27,17 +29,44 @@ actor {
     description : Text;
     priceInCents : Nat;
     sold : Bool;
+    published : Bool;
     createdBy : Principal;
+  };
+
+  public type MediaKind = {
+    #image;
+    #model3d : { modelType : Text }; // e.g., "glb", "gltf" etc.
+  };
+
+  public type BrandingAsset = {
+    blob : Storage.ExternalBlob;
+    mediaKind : MediaKind;
+    contentType : Text;
+  };
+
+  public type StorefrontHeroText = {
+    #default;
+    #custom : {
+      title : Text;
+      subtitle : Text;
+    };
+  };
+
+  public type Branding = {
+    appName : Text;
+    logo : Storage.ExternalBlob;
+    heroMedia : BrandingAsset;
+    storefrontHeroText : StorefrontHeroText;
   };
 
   public type UserProfile = {
     name : Text;
   };
 
-  public type Branding = {
-    appName : Text;
-    logo : Storage.ExternalBlob;
-    heroImage : Storage.ExternalBlob;
+  public type StorefrontItems = {
+    items : [Item];
+    headerAsset : BrandingAsset;
+    heroText : StorefrontHeroText;
   };
 
   let descriptionExamples = [
@@ -53,7 +82,7 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
   var stripeConfig : ?Stripe.StripeConfiguration = null;
   var branding : ?Branding = null;
-  let baskets = Map.empty<Principal, List.List<Blob>>();
+  let baskets = Map.empty<Principal, [Blob]>();
 
   // Basket management
   public shared ({ caller }) func addToBasket(itemId : Blob) : async () {
@@ -68,12 +97,11 @@ actor {
           Runtime.trap("Item is already sold");
         };
         let currentBasket = switch (baskets.get(caller)) {
-          case (null) { List.empty<Blob>() };
+          case (null) { [] };
           case (?basket) { basket };
         };
 
-        currentBasket.add(itemId);
-        baskets.add(caller, currentBasket);
+        baskets.add(caller, currentBasket.concat([itemId]));
       };
     };
   };
@@ -86,8 +114,7 @@ actor {
     switch (baskets.get(caller)) {
       case (null) { Runtime.trap("Basket is empty") };
       case (?basket) {
-        let filtered = basket.filter(func(id) { id != itemId });
-        baskets.add(caller, filtered);
+        baskets.add(caller, basket.filter(func(id) { id != itemId }));
       };
     };
   };
@@ -101,8 +128,8 @@ actor {
     };
 
     let itemIds = switch (baskets.get(caller)) {
-      case (null) { List.empty<Blob>().toArray() };
-      case (?basket) { basket.toArray() };
+      case (null) { [] };
+      case (?basket) { basket };
     };
 
     let itemList = itemIds.map(func(id) { switch (items.get(id)) { case (?item) { item }; case (null) { Runtime.trap("Item not found") } } });
@@ -128,11 +155,11 @@ actor {
     switch (baskets.get(caller)) {
       case (null) { Runtime.trap("Basket is empty") };
       case (?basket) {
-        if (basket.isEmpty()) {
+        if (basket.size() == 0) {
           Runtime.trap("Basket is empty");
         };
 
-        let itemsForCheckout = basket.toArray().map(
+        let itemsForCheckout = basket.map(
           func(itemId) {
             switch (items.get(itemId)) {
               case (null) { Runtime.trap("Item not found") };
@@ -162,6 +189,43 @@ actor {
         );
       };
     };
+  };
+
+  // Publishing (admin functionality)
+  public shared ({ caller }) func publishItems(itemIds : [Blob]) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can publish items");
+    };
+
+    itemIds.forEach(
+      func(id) {
+        switch (items.get(id)) {
+          case (null) { Runtime.trap("Item not found") };
+          case (?item) {
+            let updatedItem = { item with published = true };
+            items.add(id, updatedItem);
+          };
+        };
+      }
+    );
+  };
+
+  public shared ({ caller }) func unpublishItems(itemIds : [Blob]) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can unpublish items");
+    };
+
+    itemIds.forEach(
+      func(id) {
+        switch (items.get(id)) {
+          case (null) { Runtime.trap("Item not found") };
+          case (?item) {
+            let updatedItem = { item with published = false };
+            items.add(id, updatedItem);
+          };
+        };
+      }
+    );
   };
 
   public shared ({ caller }) func markItemsAsSold(itemIds : [Blob]) : async () {
@@ -250,6 +314,13 @@ actor {
     branding := ?brand;
   };
 
+  public shared ({ caller }) func getStorefrontHeroText() : async StorefrontHeroText {
+    switch (branding) {
+      case (null) { #default };
+      case (?brand) { brand.storefrontHeroText };
+    };
+  };
+
   // Admin update item description
   public shared ({ caller }) func updateItemDescription(itemId : Blob, newDescription : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
@@ -319,6 +390,20 @@ actor {
     items.values().toArray();
   };
 
+  public query ({ caller }) func getStorefrontItems() : async ?StorefrontItems {
+    let publishedItems = items.values().toArray().filter(func(item) { item.published });
+    switch (branding) {
+      case (null) { null };
+      case (?brand) {
+        ?{
+          items = publishedItems;
+          headerAsset = brand.heroMedia;
+          heroText = brand.storefrontHeroText;
+        };
+      };
+    };
+  };
+
   public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
     OutCall.transform(input);
   };
@@ -341,6 +426,7 @@ actor {
       description;
       priceInCents = 0;
       sold = false;
+      published = false;
       createdBy = creator;
     };
     items.add(photo, item);

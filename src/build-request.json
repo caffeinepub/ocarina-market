@@ -1,130 +1,99 @@
 {
   "kind": "build_request",
-  "title": "Add guest basket with multi-item Stripe checkout while keeping single-item purchase from item pages",
+  "title": "Branding: upload logo image + editable storefront hero tagline",
   "projectName": "Ocarina Market",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-21",
-      "text": "Add a guest basket/cart feature that lets users add multiple storefront items to a basket and review/remove items before checkout.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "retry building the checkout for multiple items, but allow to buy one only from the store"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Storefront users can add an item to a basket without logging in.",
-        "Basket contents persist across page refreshes for guests (e.g., localStorage/sessionStorage).",
-        "Basket UI shows a list of selected items with title, thumbnail, price, and sold status.",
-        "Users can remove individual items from the basket and clear the basket.",
-        "Sold items (or items with price not set) are clearly indicated in the basket UI and cannot be checked out."
-      ]
-    },
-    {
-      "id": "REQ-22",
-      "text": "Add a dedicated Basket page/route (e.g., \"/basket\" or \"/cart\") and a header entry point that shows the current basket item count for guests and authenticated users.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "retry building the checkout for multiple items, but allow to buy one only from the store"
-        ]
-      },
-      "acceptanceCriteria": [
-        "There is a navigable Basket/Cart page route reachable from the global header.",
-        "The header displays a basket/cart button/link with an item count badge when the basket is non-empty.",
-        "Navigation works with the existing TanStack Router setup.",
-        "All user-facing text on the basket/cart UI is in English."
-      ]
-    },
-    {
-      "id": "REQ-23",
-      "text": "Implement Stripe checkout from the basket for multiple items in a single checkout session, using the existing Stripe checkout flow (success and cancel return pages).",
+      "id": "REQ-31",
+      "text": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "retry building the checkout for multiple items, but allow to buy one only from the store"
+          "let me upload image for logo in branding. and also let me edit where it says handcrafted ocarinas discover unique...."
         ]
       },
       "acceptanceCriteria": [
-        "From the Basket page, users can start a Stripe Checkout session that includes all eligible (not sold, priced) basket items as line items.",
-        "If any basket item becomes sold before checkout begins, the app prevents checkout and prompts the user to update the basket.",
-        "On successful return (payment success page), the storefront data is refreshed and purchased items are reflected as sold.",
-        "On cancel return (payment failure page), the basket remains unchanged.",
-        "The existing guest checkout behavior remains supported (no Internet Identity login required)."
+        "Backend `Branding` type includes two new fields for hero text (e.g., `heroTitle` and `heroSubtitle`) stored persistently.",
+        "`getBranding` returns the new hero text fields and `setBranding` persists them (admin-only, as today).",
+        "`getStorefrontItems` response includes the hero text fields needed by the public storefront page (so the storefront can render hero text without extra authenticated calls).",
+        "Storefront hero renders the configured hero title/subtitle when set; otherwise falls back to the current default English strings: title \"Handcrafted Ocarinas\" and subtitle \"Discover unique, beautifully crafted ocarinas perfect for collectors and musicians\".",
+        "If an upgrade/migration is required due to the Branding schema change, add/adjust `backend/migration.mo` so existing deployments get safe default values for the new fields."
       ]
     },
     {
-      "id": "REQ-24",
-      "text": "Ensure inventory protection (marking items as sold after confirmed payment) works for multi-item basket checkout, not only single-item checkout.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "retry building the checkout for multiple items, but allow to buy one only from the store"
-        ]
-      },
-      "acceptanceCriteria": [
-        "For a completed multi-item Stripe session, every purchased item is marked sold in backend state.",
-        "Items are not marked sold for cancelled/failed sessions.",
-        "If the same item is attempted in two checkouts, only the first completed payment can successfully mark it sold (subsequent attempts must result in the item remaining unavailable).",
-        "The sold status updates are observable via existing public item queries (e.g., getItems/getItem)."
-      ]
-    },
-    {
-      "id": "REQ-25",
-      "text": "Keep the storefront purchase UX limited to buying a single item directly from an item detail page (i.e., the existing \"Buy Now\" flow remains single-item), while basket checkout is the only multi-item purchase flow.",
+      "id": "REQ-32",
+      "text": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "retry building the checkout for multiple items, but allow to buy one only from the store"
+          "let me upload image for logo in branding. and also let me edit where it says handcrafted ocarinas discover unique...."
         ]
       },
       "acceptanceCriteria": [
-        "Item detail pages continue to offer a single-item \"Buy Now\" checkout for that item only.",
-        "Storefront listing cards remain navigation-only (no multi-item checkout initiation directly from the listing).",
-        "Multi-item checkout initiation is available only from the Basket page."
+        "On `/admin/branding`, provide a \"Logo\" file picker that accepts image files only (e.g., `accept=\"image/*\"`).",
+        "Selecting a logo image shows an on-page preview of the chosen image (before saving).",
+        "Saving branding after selecting a logo image uploads the file bytes and stores it as `branding.logo` (using the same blob upload approach currently used for hero media uploads).",
+        "If no logo file is selected, saving branding keeps the existing logo unless the admin explicitly sets a path/URL field to override it (if the path/URL input remains present).",
+        "After saving, the storefront header logo (in `frontend/src/App.tsx`) continues to render from `branding.logo.getDirectURL()` and displays the updated uploaded logo."
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "text": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "...let me edit where it says handcrafted ocarinas discover unique...."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On `/admin/branding`, add two labeled text inputs (English labels) for hero title and hero subtitle.",
+        "The inputs are pre-populated from the current branding values when available.",
+        "Clicking \"Save Branding Settings\" persists the hero title/subtitle along with the existing branding fields (store name, logo, hero media).",
+        "If the admin clears either field and saves, the storefront falls back to the default hero text (do not render empty hero text)."
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "text": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "...edit where it says handcrafted ocarinas discover unique...."
+        ]
+      },
+      "acceptanceCriteria": [
+        "`frontend/src/components/StorefrontHeroMedia.tsx` no longer hard-codes \"Handcrafted Ocarinas\" or the \"Discover unique...\" subtitle.",
+        "The hero title/subtitle rendered for both image and 3D hero variants are driven by branding data (as provided to the component via props from the storefront page).",
+        "When branding values are missing/empty, the component renders the same default English strings that were previously hard-coded."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko canister with all logic in backend/main.mo.",
-    "Do not edit frontend paths marked immutable in SYSTEM_CONTEXT (compose existing UI components instead).",
-    "Do not require Internet Identity authentication to add to basket or to start/complete checkout (guest checkout must remain supported).",
+    "Backend must remain a single Motoko actor (all logic in `backend/main.mo`).",
+    "Do not edit files under `frontend/src/components/ui` or any paths listed in `frontend.immutablePaths`.",
     "Use English for all user-facing text."
   ],
   "nonGoals": [
-    "Do not add third-party authentication providers (Internet Identity only, and not required for purchasing).",
-    "Do not implement real-time updates (no WebSockets).",
-    "Do not add external databases or non-Motoko backend services.",
-    "Do not introduce multi-vendor, shipping, taxes, discounts, or coupon systems unless explicitly requested."
+    "Changing the existing hero media upload behavior for images/.obj/.3mf beyond what is necessary to support editable hero text.",
+    "Adding additional branding fields beyond logo upload and hero title/subtitle editing.",
+    "Introducing third-party storage/CDNs or external databases."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

@@ -1,10 +1,12 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 17,
   "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
   "architectural_notes": [
     "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
-    "Add an admin-accessible app configuration section for managing storefront branding settings."
+    "Add an admin-accessible app configuration section for managing storefront branding settings.",
+    "Support additional media types in branding settings (images plus 3D model files like 3MF/OBJ) and define how they are stored and rendered publicly.",
+    "Stripe payments are configured to use AUD as the storefront currency."
   ],
   "known_issues": [],
   "isFixRequest": false,
@@ -168,6 +170,70 @@
         "REQ-25"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-add-an-explicit-live-published-status-to-store-items-so-the-storefront-only-shows-items-that-are-published-live-while-admins-can-still-view-and-manage-unpublished-items",
+      "title": "Add an explicit “live/published” status to store items so the storefront only shows items that are published (live), while admins can still view and manage unpublished items.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-branding-settings-screen-to-allow-admins-to-upload-branding-media-from-their-computer-not-just-paste-a-url-accepting-images-and-3d-model-files-in-3mf-and-obj-formats-and-save-the-uploaded-media-into-branding",
+      "title": "Update the Admin Branding Settings screen to allow admins to upload branding media from their computer (not just paste a URL), accepting images and 3D model files in .3mf and .obj formats, and save the uploaded media into branding.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-render-the-storefront-hero-using-branding-media-show-an-image-hero-background-when-the-branding-media-is-an-image-and-show-an-embedded-3d-viewer-when-the-branding-media-is-a-3d-model-3mf-or-obj",
+      "title": "Render the storefront hero using branding media: show an image hero background when the branding media is an image, and show an embedded 3D viewer when the branding media is a 3D model (.3mf or .obj).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-item-publishing-live-store-workflow-is-available-in-the-admin-ui-in-a-way-that-is-consistent-with-existing-admin-item-editing-patterns-description-photo-edit-price-edit-including-clear-english-labels-and-safe-defaults",
+      "title": "Ensure the item publishing (“live store”) workflow is available in the admin UI in a way that is consistent with existing admin item editing patterns (description/photo edit + price edit), including clear English labels and safe defaults.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-branding-configuration-to-include-editable-storefront-hero-text-title-and-subtitle-and-expose-it-publicly-so-the-storefront-hero-no-longer-uses-hard-coded-strings",
+      "title": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-friendly-logo-image-upload-control-in-branding-settings-that-uploads-an-image-file-and-saves-it-as-the-branding-logo-not-only-via-a-pasted-url-path",
+      "title": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-editable-inputs-for-the-storefront-hero-title-and-subtitle-on-the-admin-branding-settings-page-and-persist-them-via-the-existing-branding-save-flow",
+      "title": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-hard-coded-hero-title-subtitle-in-the-storefront-hero-component-with-values-from-the-backend-branding-configuration-with-fallbacks",
+      "title": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -257,6 +323,38 @@
       "reqIds": [
         "REQ-24"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add per-item size selection with three variants (Small $9, Medium $11, Large $15) and allow admin to update variant pricing",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Allow uploading images or 3D models (3MF/OBJ) via branding settings for display on the storefront (e.g., hero/branding media)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Extend the backend branding configuration to support a single hero “branding media” asset that can be either an image or a 3D model, with enough metadata to render it correctly (at minimum: blob reference + content type and/or media kind).",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Allow admins to upload a logo image in Branding Settings (store logo asset upload, not just URL/path) and have it render in the storefront header",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Allow admins to edit the storefront hero text/tagline (e.g., 'Handcrafted ocarinas… Discover unique…') via Branding Settings",
+      "reqIds": [],
       "status": "pending"
     }
   ],

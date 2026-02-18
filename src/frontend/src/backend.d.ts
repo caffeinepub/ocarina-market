@@ -19,6 +19,20 @@ export interface TransformationOutput {
     body: Uint8Array;
     headers: Array<http_header>;
 }
+export interface BrandingAsset {
+    contentType: string;
+    blob: ExternalBlob;
+    mediaKind: MediaKind;
+}
+export type MediaKind = {
+    __kind__: "image";
+    image: null;
+} | {
+    __kind__: "model3d";
+    model3d: {
+        modelType: string;
+    };
+};
 export interface http_header {
     value: string;
     name: string;
@@ -39,15 +53,31 @@ export interface Item {
     id: Uint8Array;
     title: string;
     contentType: string;
+    published: boolean;
     createdBy: Principal;
     sold: boolean;
     description: string;
     photo: ExternalBlob;
     priceInCents: bigint;
 }
+export type StorefrontHeroText = {
+    __kind__: "custom";
+    custom: {
+        title: string;
+        subtitle: string;
+    };
+} | {
+    __kind__: "default";
+    default: null;
+};
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
+}
+export interface StorefrontItems {
+    headerAsset: BrandingAsset;
+    heroText: StorefrontHeroText;
+    items: Array<Item>;
 }
 export type StripeSessionStatus = {
     __kind__: "completed";
@@ -68,7 +98,8 @@ export interface StripeConfiguration {
 export interface Branding {
     appName: string;
     logo: ExternalBlob;
-    heroImage: ExternalBlob;
+    storefrontHeroText: StorefrontHeroText;
+    heroMedia: BrandingAsset;
 }
 export interface UserProfile {
     name: string;
@@ -94,17 +125,21 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getItem(id: Uint8Array): Promise<Item>;
     getItems(): Promise<Array<Item>>;
+    getStorefrontHeroText(): Promise<StorefrontHeroText>;
+    getStorefrontItems(): Promise<StorefrontItems | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
     markItemsAsSold(itemIds: Array<Uint8Array>): Promise<void>;
+    publishItems(itemIds: Array<Uint8Array>): Promise<void>;
     removeFromBasket(itemId: Uint8Array): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setBranding(brand: Branding): Promise<void>;
     setItemPrice(itemId: Uint8Array, priceInCents: bigint): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    unpublishItems(itemIds: Array<Uint8Array>): Promise<void>;
     updateItemDescription(itemId: Uint8Array, newDescription: string): Promise<void>;
     updateItemPhoto(itemId: Uint8Array, newPhoto: ExternalBlob, newContentType: string): Promise<void>;
 }

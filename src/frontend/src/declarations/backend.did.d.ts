@@ -13,25 +13,43 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface Branding {
   'appName' : string,
   'logo' : ExternalBlob,
-  'heroImage' : ExternalBlob,
+  'storefrontHeroText' : StorefrontHeroText,
+  'heroMedia' : BrandingAsset,
+}
+export interface BrandingAsset {
+  'contentType' : string,
+  'blob' : ExternalBlob,
+  'mediaKind' : MediaKind,
 }
 export type ExternalBlob = Uint8Array;
 export interface Item {
   'id' : Uint8Array,
   'title' : string,
   'contentType' : string,
+  'published' : boolean,
   'createdBy' : Principal,
   'sold' : boolean,
   'description' : string,
   'photo' : ExternalBlob,
   'priceInCents' : bigint,
 }
+export type MediaKind = { 'image' : null } |
+  { 'model3d' : { 'modelType' : string } };
 export interface ShoppingItem {
   'productName' : string,
   'currency' : string,
   'quantity' : bigint,
   'priceInCents' : bigint,
   'productDescription' : string,
+}
+export type StorefrontHeroText = {
+    'custom' : { 'title' : string, 'subtitle' : string }
+  } |
+  { 'default' : null };
+export interface StorefrontItems {
+  'headerAsset' : BrandingAsset,
+  'heroText' : StorefrontHeroText,
+  'items' : Array<Item>,
 }
 export interface StripeConfiguration {
   'allowedCountries' : Array<string>,
@@ -109,17 +127,21 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getItem' : ActorMethod<[Uint8Array], Item>,
   'getItems' : ActorMethod<[], Array<Item>>,
+  'getStorefrontHeroText' : ActorMethod<[], StorefrontHeroText>,
+  'getStorefrontItems' : ActorMethod<[], [] | [StorefrontItems]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'markItemsAsSold' : ActorMethod<[Array<Uint8Array>], undefined>,
+  'publishItems' : ActorMethod<[Array<Uint8Array>], undefined>,
   'removeFromBasket' : ActorMethod<[Uint8Array], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setBranding' : ActorMethod<[Branding], undefined>,
   'setItemPrice' : ActorMethod<[Uint8Array, bigint], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
+  'unpublishItems' : ActorMethod<[Array<Uint8Array>], undefined>,
   'updateItemDescription' : ActorMethod<[Uint8Array, string], undefined>,
   'updateItemPhoto' : ActorMethod<
     [Uint8Array, ExternalBlob, string],

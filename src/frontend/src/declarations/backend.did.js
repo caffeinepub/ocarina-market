@@ -36,18 +36,38 @@ export const Item = IDL.Record({
   'id' : IDL.Vec(IDL.Nat8),
   'title' : IDL.Text,
   'contentType' : IDL.Text,
+  'published' : IDL.Bool,
   'createdBy' : IDL.Principal,
   'sold' : IDL.Bool,
   'description' : IDL.Text,
   'photo' : ExternalBlob,
   'priceInCents' : IDL.Nat,
 });
+export const StorefrontHeroText = IDL.Variant({
+  'custom' : IDL.Record({ 'title' : IDL.Text, 'subtitle' : IDL.Text }),
+  'default' : IDL.Null,
+});
+export const MediaKind = IDL.Variant({
+  'image' : IDL.Null,
+  'model3d' : IDL.Record({ 'modelType' : IDL.Text }),
+});
+export const BrandingAsset = IDL.Record({
+  'contentType' : IDL.Text,
+  'blob' : ExternalBlob,
+  'mediaKind' : MediaKind,
+});
 export const Branding = IDL.Record({
   'appName' : IDL.Text,
   'logo' : ExternalBlob,
-  'heroImage' : ExternalBlob,
+  'storefrontHeroText' : StorefrontHeroText,
+  'heroMedia' : BrandingAsset,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const StorefrontItems = IDL.Record({
+  'headerAsset' : BrandingAsset,
+  'heroText' : StorefrontHeroText,
+  'items' : IDL.Vec(Item),
+});
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
     'userPrincipal' : IDL.Opt(IDL.Text),
@@ -139,6 +159,8 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
   'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
+  'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], []),
+  'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -148,6 +170,7 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'markItemsAsSold' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
+  'publishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
   'removeFromBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setBranding' : IDL.Func([Branding], [], []),
@@ -158,6 +181,7 @@ export const idlService = IDL.Service({
       [TransformationOutput],
       ['query'],
     ),
+  'unpublishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
   'updateItemDescription' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [], []),
   'updateItemPhoto' : IDL.Func(
       [IDL.Vec(IDL.Nat8), ExternalBlob, IDL.Text],
@@ -197,18 +221,38 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Vec(IDL.Nat8),
     'title' : IDL.Text,
     'contentType' : IDL.Text,
+    'published' : IDL.Bool,
     'createdBy' : IDL.Principal,
     'sold' : IDL.Bool,
     'description' : IDL.Text,
     'photo' : ExternalBlob,
     'priceInCents' : IDL.Nat,
   });
+  const StorefrontHeroText = IDL.Variant({
+    'custom' : IDL.Record({ 'title' : IDL.Text, 'subtitle' : IDL.Text }),
+    'default' : IDL.Null,
+  });
+  const MediaKind = IDL.Variant({
+    'image' : IDL.Null,
+    'model3d' : IDL.Record({ 'modelType' : IDL.Text }),
+  });
+  const BrandingAsset = IDL.Record({
+    'contentType' : IDL.Text,
+    'blob' : ExternalBlob,
+    'mediaKind' : MediaKind,
+  });
   const Branding = IDL.Record({
     'appName' : IDL.Text,
     'logo' : ExternalBlob,
-    'heroImage' : ExternalBlob,
+    'storefrontHeroText' : StorefrontHeroText,
+    'heroMedia' : BrandingAsset,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const StorefrontItems = IDL.Record({
+    'headerAsset' : BrandingAsset,
+    'heroText' : StorefrontHeroText,
+    'items' : IDL.Vec(Item),
+  });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
       'userPrincipal' : IDL.Opt(IDL.Text),
@@ -297,6 +341,8 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
     'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
+    'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], []),
+    'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -306,6 +352,7 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'markItemsAsSold' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
+    'publishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
     'removeFromBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setBranding' : IDL.Func([Branding], [], []),
@@ -316,6 +363,7 @@ export const idlFactory = ({ IDL }) => {
         [TransformationOutput],
         ['query'],
       ),
+    'unpublishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
     'updateItemDescription' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [], []),
     'updateItemPhoto' : IDL.Func(
         [IDL.Vec(IDL.Nat8), ExternalBlob, IDL.Text],

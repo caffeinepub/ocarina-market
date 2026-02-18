@@ -10,6 +10,7 @@ import { ArrowLeft, ShoppingCart, Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import PriceEditor from '../components/PriceEditor';
 import AdminItemEditor from '../components/AdminItemEditor';
+import AdminPublishToggle from '../components/AdminPublishToggle';
 import StripeSetup from '../components/StripeSetup';
 import { toast } from 'sonner';
 
@@ -153,48 +154,34 @@ export default function ItemDetailPage() {
         <div className="space-y-6">
           <div>
             <div className="flex items-start justify-between gap-4 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold capitalize">{item.title}</h1>
+              <h1 className="text-3xl font-bold capitalize">{item.title}</h1>
               {item.sold && (
-                <Badge variant="secondary" className="text-base px-3 py-1">Sold</Badge>
+                <Badge variant="secondary" className="text-base px-3 py-1">
+                  Sold
+                </Badge>
               )}
             </div>
             {formattedPrice && (
-              <p className="text-3xl font-bold text-primary">{formattedPrice}</p>
-            )}
-            {!formattedPrice && !isAdmin && (
-              <p className="text-lg text-muted-foreground">Price not set</p>
+              <p className="text-3xl font-bold text-primary mt-2">
+                {formattedPrice}
+              </p>
             )}
           </div>
 
           <div className="prose prose-sm max-w-none">
-            <p className="text-foreground/90 leading-relaxed">{item.description}</p>
+            <p className="text-muted-foreground leading-relaxed">
+              {item.description}
+            </p>
           </div>
 
-          {/* Admin Price Editor */}
-          {isAdmin && (
-            <PriceEditor 
-              itemId={item.id} 
-              currentPriceInCents={item.priceInCents} 
-            />
-          )}
-
-          {/* Admin Item Editor */}
-          {isAdmin && (
-            <AdminItemEditor 
-              itemId={item.id} 
-              currentDescription={item.description}
-              onPhotoUpdateSuccess={handlePhotoUpdateSuccess}
-            />
-          )}
-
-          {/* Action Buttons */}
-          {!item.sold && (
-            <div className="space-y-3">
+          {/* Purchase Actions */}
+          {canPurchase && (
+            <div className="space-y-3 pt-4 border-t border-border">
               <Button
-                size="lg"
-                className="w-full"
                 onClick={handleBuyNow}
-                disabled={createCheckoutSession.isPending || !isStripeConfigured || item.priceInCents <= 0}
+                disabled={createCheckoutSession.isPending}
+                className="w-full"
+                size="lg"
               >
                 {createCheckoutSession.isPending ? (
                   <>
@@ -210,11 +197,11 @@ export default function ItemDetailPage() {
               </Button>
 
               <Button
-                size="lg"
+                onClick={handleAddToBasket}
+                disabled={isInBasket}
                 variant="outline"
                 className="w-full"
-                onClick={handleAddToBasket}
-                disabled={isInBasket || item.priceInCents <= 0}
+                size="lg"
               >
                 {isInBasket ? (
                   'Already in Basket'
@@ -228,23 +215,45 @@ export default function ItemDetailPage() {
             </div>
           )}
 
-          {item.sold && (
-            <div className="p-4 border border-border rounded-lg bg-muted/50 text-center">
-              <p className="text-muted-foreground">This item has been sold</p>
+          {!canPurchase && !item.sold && (
+            <div className="pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                {item.priceInCents <= 0 
+                  ? 'Price not yet set for this item'
+                  : 'Payment system is being configured'}
+              </p>
             </div>
           )}
 
-          {!isStripeConfigured && isAdmin && (
-            <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/10">
-              <p className="text-sm text-destructive">
-                Stripe is not configured. Visit the Admin Panel to set up payments.
-              </p>
+          {/* Admin Section */}
+          {isAdmin && (
+            <div className="space-y-4 pt-6 border-t-2 border-border">
+              <h3 className="text-lg font-semibold">Admin Controls</h3>
+              
+              <AdminPublishToggle 
+                itemId={item.id} 
+                isPublished={item.published} 
+              />
+
+              <PriceEditor 
+                itemId={item.id} 
+                currentPriceInCents={item.priceInCents} 
+              />
+
+              <AdminItemEditor
+                itemId={item.id}
+                currentDescription={item.description}
+                onPhotoUpdateSuccess={handlePhotoUpdateSuccess}
+              />
             </div>
           )}
         </div>
       </div>
 
-      <StripeSetup open={showStripeSetup} onOpenChange={setShowStripeSetup} />
+      <StripeSetup 
+        open={showStripeSetup} 
+        onOpenChange={setShowStripeSetup} 
+      />
     </div>
   );
 }
