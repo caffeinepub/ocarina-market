@@ -1,52 +1,59 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T05:20:24.608Z",
+  "generatedAt": "2026-02-18T07:51:36.413Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 1,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-35",
-        "summary": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
+        "id": "REQ-38",
+        "summary": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-36",
-        "summary": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-37",
-        "summary": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
+        "id": "REQ-39",
+        "summary": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/bulkUploadVerification.ts",
-          "frontend/src/pages/AdminBulkUploadPage.tsx"
+          "frontend/src/pages/AdminBulkUploadPage.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/bulkUploadVerification.ts",
           "frontend/src/pages/AdminBulkUploadPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-40",
+        "summary": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ItemDetailPage.tsx",
+          "frontend/src/components/ItemCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ItemDetailPage.tsx",
+          "frontend/src/components/ItemCard.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/components/ItemCard.tsx",
     "frontend/src/pages/AdminBulkUploadPage.tsx",
-    "frontend/src/utils/bulkUploadVerification.ts",
+    "frontend/src/pages/ItemDetailPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

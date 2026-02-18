@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 19,
+  "projectStateVersion": 21,
   "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
   "architectural_notes": [
     "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
@@ -244,6 +244,22 @@
         "REQ-37"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-ensure-the-storefront-only-shows-items-that-are-published-but-make-the-post-upload-experience-explicitly-communicate-why-newly-uploaded-items-may-not-appear-on-the-public-storefront-and-guide-the-admin-to-publish-them",
+      "title": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-frontend-diagnostics-for-missing-broken-item-images-so-admins-can-distinguish-between-a-an-unpublished-item-not-appearing-on-the-storefront-and-b-an-item-image-failing-to-load-due-to-a-broken-blob-url",
+      "title": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -380,6 +396,14 @@
       "summary": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
       "reqIds": [
         "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
+      "reqIds": [
+        "REQ-38"
       ],
       "status": "pending"
     }

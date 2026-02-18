@@ -4,12 +4,14 @@ import { useActor } from '../hooks/useActor';
 import AccessDeniedScreen from '../components/AccessDeniedScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { verifyBulkUpload } from '../utils/bulkUploadVerification';
+import { encodeItemId } from '../lib/idEncoding';
 
 interface UploadFile {
   file: File;
@@ -26,6 +28,7 @@ export default function AdminBulkUploadPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const [uploadedItemIds, setUploadedItemIds] = useState<Uint8Array[]>([]);
 
   if (adminLoading) {
     return (
@@ -82,6 +85,9 @@ export default function AdminBulkUploadPage() {
         },
       });
 
+      // Store the item IDs for later navigation
+      setUploadedItemIds(itemIds);
+
       // Step 2: Verify uploads
       setUploadFiles(prev => prev.map(f => ({ ...f, status: 'verifying' as const, progress: 100 })));
 
@@ -94,10 +100,6 @@ export default function AdminBulkUploadPage() {
       // Step 4: Mark as success
       setUploadFiles(prev => prev.map(f => ({ ...f, status: 'success' as const, progress: 100 })));
       toast.success(`Successfully uploaded and verified ${uploadFiles.length} item(s)`);
-      
-      setTimeout(() => {
-        navigate({ to: '/' });
-      }, 2000);
     } catch (error) {
       console.error('Upload error:', error);
       setUploadFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })));
@@ -110,9 +112,19 @@ export default function AdminBulkUploadPage() {
   const handleClear = () => {
     uploadFiles.forEach(uf => URL.revokeObjectURL(uf.preview));
     setUploadFiles([]);
+    setUploadedItemIds([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleGoToAdmin = () => {
+    navigate({ to: '/admin' });
+  };
+
+  const handleViewItem = (itemId: Uint8Array) => {
+    const encodedId = encodeItemId(itemId);
+    navigate({ to: '/items/$itemId', params: { itemId: encodedId } });
   };
 
   const isUploading = uploadFiles.some(f => f.status === 'uploading' || f.status === 'verifying');
@@ -235,15 +247,58 @@ export default function AdminBulkUploadPage() {
             </Button>
           )}
 
+          {/* Success State with Publishing Instructions */}
           {allSuccess && (
-            <div className="text-center space-y-4">
+            <div className="space-y-4">
               <div className="flex justify-center">
                 <CheckCircle2 className="h-16 w-16 text-primary" />
               </div>
-              <p className="text-lg font-semibold">Upload Complete!</p>
-              <p className="text-sm text-muted-foreground">
-                Redirecting to storefront...
-              </p>
+              <p className="text-lg font-semibold text-center">Upload Complete!</p>
+              
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Items Created as Unpublished</AlertTitle>
+                <AlertDescription>
+                  Your {uploadFiles.length} item(s) have been successfully uploaded and created as <strong>unpublished drafts</strong>. 
+                  They will not appear on the public storefront until you publish them.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-center">Next Steps:</p>
+                
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleGoToAdmin}
+                    variant="default"
+                    className="w-full"
+                    size="lg"
+                  >
+                    Go to Admin Panel
+                  </Button>
+
+                  {uploadedItemIds.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground text-center">
+                        Or view and publish individual items:
+                      </p>
+                      <div className="max-h-40 overflow-y-auto space-y-2">
+                        {uploadedItemIds.map((itemId, index) => (
+                          <Button
+                            key={index}
+                            onClick={() => handleViewItem(itemId)}
+                            variant="outline"
+                            className="w-full"
+                            size="sm"
+                          >
+                            View Item {index + 1}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

@@ -1,85 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Fix admin image uploads that report success but do not appear in the store",
-  "projectName": "Ocarina Market",
-  "priority": "normal",
+  "title": "Fix uploaded item photos not appearing in Ocarina store",
+  "projectName": "Ocarina Store",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-35",
-      "text": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
+      "id": "REQ-38",
+      "text": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-1"
         ],
         "quotes": [
-          "images are not being uploaded to the store, even though it says successfully uploaded"
+          "Its not showing the photos i upload to ocarina store"
         ]
       },
       "acceptanceCriteria": [
-        "Uploading one or more images via the existing admin bulk upload flow results in new Item records being added to the canister state.",
-        "For each newly created Item, its photo blob can be fetched via the blob-storage mechanism (i.e., the frontend can obtain a stable direct URL and successfully load the image).",
-        "If an upload cannot be persisted/retrieved, the backend call fails (traps/returns error) rather than silently creating a broken item record."
+        "After bulk uploading one or more images, calling the backend to fetch each created item returns an item whose `photo.getDirectURL()` resolves to an accessible URL that returns HTTP 200 and an image payload.",
+        "After replacing an item image via the admin flow, the updated item’s `photo.getDirectURL()` resolves to an accessible URL that returns HTTP 200 and the new image payload.",
+        "Refreshing the page (new anonymous actor / new session) still shows the uploaded/replaced images, confirming persistence (not just in-memory state).",
+        "The backend continues to store `contentType` for the item and it matches the uploaded file type used to render the image correctly."
       ]
     },
     {
-      "id": "REQ-36",
-      "text": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-9"
-        ],
-        "quotes": [
-          "images are not being uploaded to the store, even though it says successfully uploaded"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Replacing an item image from the item detail admin editor results in the new image rendering on the item detail page after refresh.",
-        "After replacing an image, the item’s stable id used in URLs remains unchanged."
-      ]
-    },
-    {
-      "id": "REQ-37",
-      "text": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
+      "id": "REQ-39",
+      "text": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-9"
+          "msg-1"
         ],
         "quotes": [
-          "images are not being uploaded to the store, even though it says successfully uploaded"
+          "Its not showing the photos i upload to ocarina store"
         ]
       },
       "acceptanceCriteria": [
-        "After the bulk upload mutation resolves, the UI performs a post-upload verification step (e.g., using the returned item IDs and/or refetching items) before showing the success toast and redirecting.",
-        "If verification fails, the UI shows an error toast (English) indicating the upload did not complete correctly, and does not mark all files as success.",
-        "On success, React Query caches related to items/storefront are refreshed/invalidated so the newly created items appear without a hard reload."
+        "After a successful bulk upload, the admin UI shows clear English text that newly uploaded items are created as unpublished/drafts and will not appear on the storefront until published.",
+        "The bulk upload flow provides an obvious next step for admins (e.g., navigate to an admin item management view or the item pages) so they can publish the uploaded items.",
+        "This change does not alter the rule that the public storefront grid only displays `published=true` items."
+      ]
+    },
+    {
+      "id": "REQ-40",
+      "text": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Its not showing the photos i upload to ocarina store"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When an item image fails to load (e.g., 404 from `photo.getDirectURL()`), the UI falls back to the existing placeholder image and also shows a small, clear English indicator on the item detail page for admins (e.g., “Image failed to load”).",
+        "The existing storefront item card placeholder behavior remains intact (no broken-image icons shown to users).",
+        "Console logging (if any) does not include sensitive data and is limited to actionable debugging information."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not edit files under frontend/src/components/ui (compose instead).",
-    "Do not modify frontend immutable hook files listed in SYSTEM_CONTEXT (use existing hook APIs and add new hooks in allowed locations if needed)."
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Only create backend/migration.mo if an upgrade is required to preserve/repair existing persisted state.",
+    "Do not edit files under frontend/src/components/ui or any other frontend immutable paths listed in SYSTEM_CONTEXT; compose them instead.",
+    "Use English for all user-facing UI text."
   ],
   "nonGoals": [
-    "Changing the storefront publishing workflow (published/unpublished logic) beyond what is required to make images persist and render correctly.",
-    "Adding new purchase/payment functionality.",
-    "Changing the visual theme or branding behavior unrelated to fixing image persistence/verification."
+    "Do not change the storefront’s published-only visibility rule for items.",
+    "Do not add new third-party storage providers or external databases.",
+    "Do not add new authentication methods beyond Internet Identity (existing app behavior remains)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

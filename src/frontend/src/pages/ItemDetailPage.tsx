@@ -6,7 +6,8 @@ import { useBasket } from '../hooks/useBasket';
 import { decodeItemId } from '../lib/idEncoding';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShoppingCart, Loader2, Plus } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, ShoppingCart, Loader2, Plus, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import PriceEditor from '../components/PriceEditor';
 import AdminItemEditor from '../components/AdminItemEditor';
@@ -140,13 +141,23 @@ export default function ItemDetailPage() {
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
         {/* Image */}
         <div className="space-y-4">
-          <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+          <div className="aspect-square rounded-lg overflow-hidden bg-muted relative">
             <img
               src={imageUrl}
               alt={item.title}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
+            {isAdmin && imageError && (
+              <div className="absolute bottom-2 left-2 right-2">
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Image failed to load
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
           </div>
         </div>
 

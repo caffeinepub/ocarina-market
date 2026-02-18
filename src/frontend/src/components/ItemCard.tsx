@@ -22,38 +22,40 @@ export default function ItemCard({ item }: ItemCardProps) {
     : 'Price not set';
 
   const handleClick = () => {
-    navigate({ 
-      to: '/items/$itemId', 
-      params: { itemId: encodeItemId(item.id) } 
-    });
+    const encodedId = encodeItemId(item.id);
+    navigate({ to: '/items/$itemId', params: { itemId: encodedId } });
   };
 
   return (
     <Card 
-      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+      className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
       onClick={handleClick}
     >
       <div className="aspect-square overflow-hidden bg-muted">
         <img
           src={imageUrl}
           alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           onError={() => setImageError(true)}
         />
       </div>
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg capitalize">{item.title}</h3>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-lg capitalize line-clamp-1">
+            {item.title}
+          </h3>
           {item.sold && (
-            <Badge variant="secondary" className="shrink-0">Sold</Badge>
+            <Badge variant="secondary" className="shrink-0">
+              Sold
+            </Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {item.description}
         </p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <p className="font-semibold text-primary">
+        <p className="text-xl font-bold text-primary">
           {formattedPrice}
         </p>
       </CardFooter>

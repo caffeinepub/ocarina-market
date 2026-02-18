@@ -3,6 +3,7 @@ import Storage "blob-storage/Storage";
 import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
+import Migration "migration";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import OutCall "http-outcalls/outcall";
@@ -13,8 +14,10 @@ import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import List "mo:core/List";
 
+(with migration = Migration.run)
 actor {
   include MixinStorage();
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -144,7 +147,7 @@ actor {
   // Stripe checkout from basket
   public shared ({ caller }) func createCheckoutSessionFromBasket(
     successUrl : Text,
-    cancelUrl : Text
+    cancelUrl : Text,
   ) : async Text {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can perform checkout");

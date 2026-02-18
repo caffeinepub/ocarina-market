@@ -1,26 +1,47 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin bulk upload: verify created items and image retrievability before showing success",
+  "title": "Admin clarity and diagnostics for unpublished items vs broken item images",
   "requirements": [
     {
-      "id": "REQ-37",
-      "summary": "Add a post-upload verification step to Admin Bulk Photo Upload so success is only shown after created items are fetchable and their images are retrievable; otherwise show a clear error and remain on the page.",
+      "id": "REQ-39",
+      "summary": "Communicate that newly uploaded items are drafts/unpublished and guide admins to publish them without changing the storefront published-only rule.",
       "acceptanceCriteria": [
-        "After the bulk upload mutation resolves, the UI performs a post-upload verification step (e.g., using the returned item IDs and/or refetching items) before showing the success toast and redirecting.",
-        "If verification fails, the UI shows an error toast (English) indicating the upload did not complete correctly, and does not mark all files as success.",
-        "On success, React Query caches related to items/storefront are refreshed/invalidated so the newly created items appear without a hard reload."
+        "After a successful bulk upload, the admin UI shows clear English text that newly uploaded items are created as unpublished/drafts and will not appear on the storefront until published.",
+        "The bulk upload flow provides an obvious next step for admins (e.g., navigate to an admin item management view or the item pages) so they can publish the uploaded items.",
+        "This change does not alter the rule that the public storefront grid only displays `published=true` items."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/bulkUploadVerification.ts",
-          "operation": "create",
-          "description": "Create a small verification helper used by the Admin Bulk Photo Upload page to (1) validate the backend returned created item IDs, (2) refetch each created item via existing backend calls, and (3) sanity-check image retrievability by using the blob-storage ExternalBlob direct URL (e.g., calling getDirectURL() and performing a lightweight fetch check). Use the blob-storage component capability (ExternalBlob.getDirectURL()) to validate image rendering viability; verify the component's usage instructions before implementing."
-        },
-        {
           "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
           "operation": "modify",
-          "description": "Update the bulk upload flow to: capture the returned created item IDs from bulkUpload.mutateAsync; run a post-upload verification step (using the new helper + actor.getItem) before setting per-file status to success, showing the success toast, and redirecting; on verification failure, keep the user on the upload page, show a clear English error toast, and avoid marking all files as success. Ensure React Query item/storefront caches are invalidated/refetched only after verification passes (explicitly invalidate ['items'] and ['storefrontItems'] via QueryClient). Use blob-storage ExternalBlob direct URLs for verification; verify the component's usage instructions before implementing."
+          "description": "Update the post-upload success UI to explicitly explain that newly uploaded items are created as Unpublished/Draft and therefore won't appear on the public storefront until published; store returned item IDs in state and present clear next-step actions (e.g., button to go to /admin and links/buttons to open each uploaded item detail page where the admin can publish). Use existing admin role gating on the page. Verify the blob-storage component's usage instructions before implementing (uploads use ExternalBlob and direct URL behavior affects expectations)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure navigation entry points remain discoverable for admins after the bulk upload guidance change (e.g., confirm existing /admin and /admin/upload routes remain wired and that success-call-to-action destinations exist)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-40",
+      "summary": "Add admin-visible diagnostics on item detail when an item image fails to load, while keeping storefront card placeholder behavior unchanged and logs non-sensitive.",
+      "acceptanceCriteria": [
+        "When an item image fails to load (e.g., 404 from `photo.getDirectURL()`), the UI falls back to the existing placeholder image and also shows a small, clear English indicator on the item detail page for admins (e.g., “Image failed to load”).",
+        "The existing storefront item card placeholder behavior remains intact (no broken-image icons shown to users).",
+        "Console logging (if any) does not include sensitive data and is limited to actionable debugging information."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "operation": "modify",
+          "description": "When the item image fails to load, continue falling back to the existing placeholder and, if the viewer is an admin (use existing isAdmin state), render a small, clear English diagnostic near the image such as “Image failed to load”. Optionally add a minimal console.warn with only non-sensitive info (e.g., item id string + that image load failed). Use the blob-storage ExternalBlob.getDirectURL() behavior for image URLs; verify the blob-storage component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/ItemCard.tsx",
+          "operation": "modify",
+          "description": "Confirm/adjust image fallback behavior so storefront cards continue to show the existing placeholder on load errors without any additional admin-only indicators or broken-image UI. Keep changes minimal to preserve public UX. Verify the blob-storage component's usage instructions before implementing (card uses ExternalBlob.getDirectURL())."
         }
       ]
     }
