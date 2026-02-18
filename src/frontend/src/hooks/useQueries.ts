@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { Item, UserProfile, Branding, StorefrontItems } from '../backend';
+import { Item, UserProfile, Branding, StorefrontItems, ItemCategory, BulkItemInput } from '../backend';
 
 export function useGetItems() {
   const { actor, isFetching } = useActor();
@@ -176,32 +176,42 @@ export function useBulkUploadPhotos() {
   return useMutation({
     mutationFn: async ({ 
       files, 
+      category,
       onProgress 
     }: { 
       files: File[]; 
+      category: ItemCategory;
       onProgress?: (index: number, percentage: number) => void;
     }) => {
       if (!actor) throw new Error('Actor not available');
 
-      const creations: Array<[any, string, string | null]> = [];
+      const { ExternalBlob } = await import('../backend');
+      const itemsInput: BulkItemInput[] = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         
-        // Import ExternalBlob from backend
-        const { ExternalBlob } = await import('../backend');
         const blob = ExternalBlob.fromBytes(bytes).withUploadProgress((percentage) => {
           if (onProgress) {
             onProgress(i, percentage);
           }
         });
 
-        creations.push([blob, file.type, null]);
+        // Generate a simple title from filename
+        const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+        itemsInput.push({
+          photo: blob,
+          contentType: file.type,
+          title,
+          description: undefined, // Backend will use default
+          category,
+        });
       }
 
-      return actor.bulkUploadPhotos(creations);
+      return actor.bulkUploadItems(itemsInput);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });

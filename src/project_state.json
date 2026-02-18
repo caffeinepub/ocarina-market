@@ -1,17 +1,19 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
+  "projectStateVersion": 25,
   "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
   "architectural_notes": [
     "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
     "Add an admin-accessible app configuration section for managing storefront branding settings.",
     "Support additional media types in branding settings (images plus 3D model files like 3MF/OBJ) and define how they are stored and rendered publicly.",
-    "Stripe payments are configured to use AUD as the storefront currency."
+    "Stripe payments are configured to use AUD as the storefront currency.",
+    "Decide whether newly created items should default to published/live immediately after upload (auto-publish) vs requiring an explicit admin publish step.",
+    "Introduce an item/category field (initial allowed values: '3D printed' and 'ceramic') and ensure bulk upload sets it for each created item; decide whether/how the storefront can filter or display the category."
   ],
   "known_issues": [
     "Image uploads report success but the uploaded images are not actually appearing/stored in the store."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-add-an-admin-only-bulk-photo-upload-flow-that-accepts-multiple-images-in-one-action-and-creates-exactly-one-store-item-per-uploaded-photo",
@@ -260,6 +262,30 @@
         "REQ-40"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-bulk-upload-success-ui-to-reflect-that-newly-uploaded-items-are-already-published-not-unpublished-drafts-using-clear-english-messaging-and-provide-a-direct-navigation-option-to-the-public-storefront-after-upload",
+      "title": "Update the Admin Bulk Upload success UI to reflect that newly uploaded items are already published (not unpublished drafts), using clear English messaging, and provide a direct navigation option to the public storefront after upload.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-required-category-selector-to-the-admin-bulk-photo-upload-page-so-an-admin-can-choose-the-category-for-the-items-being-created-with-exactly-two-options-3d-printed-and-ceramic",
+      "title": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-bulk-upload-mutation-to-send-the-selected-category-along-with-each-uploaded-image-so-the-backend-can-tag-newly-created-items-appropriately",
+      "title": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -404,6 +430,42 @@
       "summary": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
       "reqIds": [
         "REQ-38"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Automatically publish items (set live/published=true) immediately after successful image upload/item creation so new uploads appear on the public storefront without manual publish step",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Automatically publish each newly created store item (set `published = true`) when an admin uploads photos via the bulk upload flow, so the items appear on the public storefront immediately after a successful upload.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Add category selection on the admin bulk upload page so each new item is tagged as either '3D printed' or 'ceramic'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\").",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Add a conditional backend state migration to support upgrading existing stored items when introducing the new category field, assigning a safe default category to all existing items.",
+      "reqIds": [
+        "REQ-46"
       ],
       "status": "pending"
     }

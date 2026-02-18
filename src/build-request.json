@@ -1,78 +1,100 @@
 {
   "kind": "build_request",
-  "title": "Fix uploaded item photos not appearing in Ocarina store",
-  "projectName": "Ocarina Store",
-  "priority": "high",
+  "title": "Add category selection to admin bulk upload (3D printed vs ceramic)",
+  "projectName": "Ocarina Storefront",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-38",
-      "text": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
+      "id": "REQ-43",
+      "text": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "In the bulk upload page, select the categorie of ocarina to post. There is two categories now  3d printed and ceramic."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin Bulk Photo Upload page shows a clearly labeled category control before upload starts.",
+        "Category selection is required; attempting to upload without selecting a category shows a clear English error message and does not start uploading.",
+        "The only selectable values are \"3D printed\" and \"Ceramic\" (spelled exactly as shown)."
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "text": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\").",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Its not showing the photos i upload to ocarina store"
+          "There is two categories now  3d printed and ceramic."
         ]
       },
       "acceptanceCriteria": [
-        "After bulk uploading one or more images, calling the backend to fetch each created item returns an item whose `photo.getDirectURL()` resolves to an accessible URL that returns HTTP 200 and an image payload.",
-        "After replacing an item image via the admin flow, the updated item’s `photo.getDirectURL()` resolves to an accessible URL that returns HTTP 200 and the new image payload.",
-        "Refreshing the page (new anonymous actor / new session) still shows the uploaded/replaced images, confirming persistence (not just in-memory state).",
-        "The backend continues to store `contentType` for the item and it matches the uploaded file type used to render the image correctly."
+        "Backend Item type includes a category field that can represent exactly the two categories: \"3D printed\" and \"Ceramic\".",
+        "The bulk upload backend API accepts the selected category and stores it on every created item.",
+        "Fetching an item (getItem/getItems/getStorefrontItems) returns the stored category for that item."
       ]
     },
     {
-      "id": "REQ-39",
-      "text": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
+      "id": "REQ-45",
+      "text": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Its not showing the photos i upload to ocarina store"
+          "select the categorie of ocarina to post"
         ]
       },
       "acceptanceCriteria": [
-        "After a successful bulk upload, the admin UI shows clear English text that newly uploaded items are created as unpublished/drafts and will not appear on the storefront until published.",
-        "The bulk upload flow provides an obvious next step for admins (e.g., navigate to an admin item management view or the item pages) so they can publish the uploaded items.",
-        "This change does not alter the rule that the public storefront grid only displays `published=true` items."
+        "Bulk upload request includes the selected category for the items being created.",
+        "If the backend rejects an unknown/missing category, the UI shows a clear English error message and keeps the admin on the upload page."
       ]
     },
     {
-      "id": "REQ-40",
-      "text": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
-      "target": "frontend",
+      "id": "REQ-46",
+      "text": "Add a conditional backend state migration to support upgrading existing stored items when introducing the new category field, assigning a safe default category to all existing items.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
-        ],
-        "quotes": [
-          "Its not showing the photos i upload to ocarina store"
         ]
       },
       "acceptanceCriteria": [
-        "When an item image fails to load (e.g., 404 from `photo.getDirectURL()`), the UI falls back to the existing placeholder image and also shows a small, clear English indicator on the item detail page for admins (e.g., “Image failed to load”).",
-        "The existing storefront item card placeholder behavior remains intact (no broken-image icons shown to users).",
-        "Console logging (if any) does not include sensitive data and is limited to actionable debugging information."
+        "A migration is added that upgrades existing persisted Item records to include the new category field without data loss.",
+        "All pre-existing items receive a default category value (choose one default and apply it consistently).",
+        "After upgrade, existing pages (storefront list/detail and admin item tools) load items successfully without runtime traps due to missing category."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
-    "Only create backend/migration.mo if an upgrade is required to preserve/repair existing persisted state.",
-    "Do not edit files under frontend/src/components/ui or any other frontend immutable paths listed in SYSTEM_CONTEXT; compose them instead.",
-    "Use English for all user-facing UI text."
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo (generate backend/migration.mo only if needed for state upgrade).",
+    "Do not edit any files under frontend/src/components/ui or any other frontend immutablePaths listed in SYSTEM_CONTEXT.",
+    "Use English for all user-facing UI strings."
   ],
   "nonGoals": [
-    "Do not change the storefront’s published-only visibility rule for items.",
-    "Do not add new third-party storage providers or external databases.",
-    "Do not add new authentication methods beyond Internet Identity (existing app behavior remains)."
+    "Adding category filtering or browsing UI on the public storefront.",
+    "Adding more than the two requested categories.",
+    "Adding per-photo category selection within a single bulk upload batch (one selected category applies to the upload action unless explicitly extended later)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

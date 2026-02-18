@@ -21,6 +21,13 @@ export interface BrandingAsset {
   'blob' : ExternalBlob,
   'mediaKind' : MediaKind,
 }
+export interface BulkItemInput {
+  'title' : string,
+  'contentType' : string,
+  'description' : [] | [string],
+  'category' : ItemCategory,
+  'photo' : ExternalBlob,
+}
 export type ExternalBlob = Uint8Array;
 export interface Item {
   'id' : Uint8Array,
@@ -30,9 +37,12 @@ export interface Item {
   'createdBy' : Principal,
   'sold' : boolean,
   'description' : string,
+  'category' : ItemCategory,
   'photo' : ExternalBlob,
   'priceInCents' : bigint,
 }
+export type ItemCategory = { 'ceramic' : null } |
+  { 'printed' : null };
 export type MediaKind = { 'image' : null } |
   { 'model3d' : { 'modelType' : string } };
 export interface ShoppingItem {
@@ -108,10 +118,7 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addToBasket' : ActorMethod<[Uint8Array], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'bulkUploadPhotos' : ActorMethod<
-    [Array<[ExternalBlob, string, [] | [string]]>],
-    Array<Uint8Array>
-  >,
+  'bulkUploadItems' : ActorMethod<[Array<BulkItemInput>], Array<Uint8Array>>,
   'clearBasket' : ActorMethod<[], undefined>,
   'createCheckoutSession' : ActorMethod<
     [Array<ShoppingItem>, string, string],
@@ -127,6 +134,7 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getItem' : ActorMethod<[Uint8Array], Item>,
   'getItems' : ActorMethod<[], Array<Item>>,
+  'getItemsByCategory' : ActorMethod<[ItemCategory], Array<Item>>,
   'getStorefrontHeroText' : ActorMethod<[], StorefrontHeroText>,
   'getStorefrontItems' : ActorMethod<[], [] | [StorefrontItems]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,

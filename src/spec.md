@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure item photos uploaded in Ocarina Store are persisted and reliably displayed, and make it clear to admins why newly uploaded items might not show on the public storefront.
+**Goal:** Add a required category selection to the Admin Bulk Photo Upload flow and store that category on created items.
 
 **Planned changes:**
-- Fix backend blob/image persistence so images uploaded via bulk upload and the admin “Replace Item Image” flow are stored in blob storage and remain retrievable via the saved `ExternalBlob` reference (including correct `contentType`).
-- Update the admin bulk upload UI to explicitly explain that newly uploaded items start as unpublished/drafts and won’t appear on the public storefront until published, and provide an obvious next step to publish them.
-- Improve admin-facing frontend diagnostics for broken/missing item images: fall back to the existing placeholder and show a small “Image failed to load” indicator on the item detail page for admins, without exposing broken-image UI to storefront users.
+- Add a required, clearly labeled category selector to the Admin Bulk Photo Upload page with exactly two options: "3D printed" and "Ceramic".
+- Update the bulk upload request from the frontend to include the selected category and show a clear English error if category is missing/invalid.
+- Extend the backend Item model to persist a category field limited to "3D printed" or "Ceramic", and include it in item fetch responses.
+- Update the bulk upload backend API to accept the selected category and store it on each created item.
+- Add a backend state migration to backfill a default category for all existing items so existing pages continue to load safely.
 
-**User-visible outcome:** Admins can upload/replace item photos and see them load consistently even after refresh/new sessions; the storefront still only shows published items, and admins get clear guidance when uploads don’t appear due to draft status or when an image URL is broken.
+**User-visible outcome:** Admins must choose either "3D printed" or "Ceramic" before starting a bulk upload, and newly created (and existing) items have a stored category returned by item APIs.

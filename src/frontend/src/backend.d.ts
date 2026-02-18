@@ -33,6 +33,13 @@ export type MediaKind = {
         modelType: string;
     };
 };
+export interface BulkItemInput {
+    title: string;
+    contentType: string;
+    description?: string;
+    category: ItemCategory;
+    photo: ExternalBlob;
+}
 export interface http_header {
     value: string;
     name: string;
@@ -57,6 +64,7 @@ export interface Item {
     createdBy: Principal;
     sold: boolean;
     description: string;
+    category: ItemCategory;
     photo: ExternalBlob;
     priceInCents: bigint;
 }
@@ -104,6 +112,10 @@ export interface Branding {
 export interface UserProfile {
     name: string;
 }
+export enum ItemCategory {
+    ceramic = "ceramic",
+    printed = "printed"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -112,7 +124,7 @@ export enum UserRole {
 export interface backendInterface {
     addToBasket(itemId: Uint8Array): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    bulkUploadPhotos(creations: Array<[ExternalBlob, string, string | null]>): Promise<Array<Uint8Array>>;
+    bulkUploadItems(itemsInput: Array<BulkItemInput>): Promise<Array<Uint8Array>>;
     clearBasket(): Promise<void>;
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     createCheckoutSessionFromBasket(successUrl: string, cancelUrl: string): Promise<string>;
@@ -125,6 +137,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getItem(id: Uint8Array): Promise<Item>;
     getItems(): Promise<Array<Item>>;
+    getItemsByCategory(category: ItemCategory): Promise<Array<Item>>;
     getStorefrontHeroText(): Promise<StorefrontHeroText>;
     getStorefrontItems(): Promise<StorefrontItems | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;

@@ -4,14 +4,17 @@ import { useActor } from '../hooks/useActor';
 import AccessDeniedScreen from '../components/AccessDeniedScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon, AlertCircle, Store } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { verifyBulkUpload } from '../utils/bulkUploadVerification';
 import { encodeItemId } from '../lib/idEncoding';
+import { getCategoryOptions, getCategoryFromLabel } from '../utils/itemCategory';
 
 interface UploadFile {
   file: File;
@@ -29,6 +32,9 @@ export default function AdminBulkUploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [uploadedItemIds, setUploadedItemIds] = useState<Uint8Array[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  const categoryOptions = getCategoryOptions();
 
   if (adminLoading) {
     return (
@@ -67,6 +73,11 @@ export default function AdminBulkUploadPage() {
       return;
     }
 
+    if (!selectedCategory) {
+      toast.error('Please select a category before uploading');
+      return;
+    }
+
     if (!actor) {
       toast.error('Backend connection not available');
       return;
@@ -75,9 +86,13 @@ export default function AdminBulkUploadPage() {
     setUploadFiles(prev => prev.map(f => ({ ...f, status: 'uploading' as const })));
 
     try {
+      // Convert category label to backend enum
+      const category = getCategoryFromLabel(selectedCategory);
+
       // Step 1: Upload files to backend
       const itemIds = await bulkUpload.mutateAsync({
         files: uploadFiles.map(uf => uf.file),
+        category,
         onProgress: (index, percentage) => {
           setUploadFiles(prev => prev.map((f, i) => 
             i === index ? { ...f, progress: percentage } : f
@@ -113,6 +128,7 @@ export default function AdminBulkUploadPage() {
     uploadFiles.forEach(uf => URL.revokeObjectURL(uf.preview));
     setUploadFiles([]);
     setUploadedItemIds([]);
+    setSelectedCategory('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -120,6 +136,10 @@ export default function AdminBulkUploadPage() {
 
   const handleGoToAdmin = () => {
     navigate({ to: '/admin' });
+  };
+
+  const handleGoToStorefront = () => {
+    navigate({ to: '/' });
   };
 
   const handleViewItem = (itemId: Uint8Array) => {
@@ -143,6 +163,34 @@ export default function AdminBulkUploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="category-select" className="text-base font-medium">
+              Ocarina Category <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+              disabled={isUploading || allSuccess}
+            >
+              <SelectTrigger id="category-select" className="w-full">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!selectedCategory && uploadFiles.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Please select a category before uploading
+              </p>
+            )}
+          </div>
+
           {/* File Input */}
           <div>
             <input
@@ -227,7 +275,7 @@ export default function AdminBulkUploadPage() {
           {uploadFiles.length > 0 && !allSuccess && (
             <Button
               onClick={handleUpload}
-              disabled={isUploading}
+              disabled={isUploading || !selectedCategory}
               className="w-full"
               size="lg"
             >
@@ -247,7 +295,7 @@ export default function AdminBulkUploadPage() {
             </Button>
           )}
 
-          {/* Success State with Publishing Instructions */}
+          {/* Success State - Items are Published */}
           {allSuccess && (
             <div className="space-y-4">
               <div className="flex justify-center">
@@ -257,10 +305,10 @@ export default function AdminBulkUploadPage() {
               
               <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Items Created as Unpublished</AlertTitle>
+                <AlertTitle>Items Published and Live</AlertTitle>
                 <AlertDescription>
-                  Your {uploadFiles.length} item(s) have been successfully uploaded and created as <strong>unpublished drafts</strong>. 
-                  They will not appear on the public storefront until you publish them.
+                  Your {uploadFiles.length} item(s) have been successfully uploaded and are now <strong>published</strong>. 
+                  They should appear on the public storefront immediately.
                 </AlertDescription>
               </Alert>
 
@@ -269,8 +317,18 @@ export default function AdminBulkUploadPage() {
                 
                 <div className="space-y-2">
                   <Button
-                    onClick={handleGoToAdmin}
+                    onClick={handleGoToStorefront}
                     variant="default"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Store className="mr-2 h-5 w-5" />
+                    View Public Storefront
+                  </Button>
+
+                  <Button
+                    onClick={handleGoToAdmin}
+                    variant="outline"
                     className="w-full"
                     size="lg"
                   >
@@ -280,7 +338,7 @@ export default function AdminBulkUploadPage() {
                   {uploadedItemIds.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground text-center">
-                        Or view and publish individual items:
+                        Or view individual items:
                       </p>
                       <div className="max-h-40 overflow-y-auto space-y-2">
                         {uploadedItemIds.map((itemId, index) => (

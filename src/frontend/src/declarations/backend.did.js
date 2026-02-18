@@ -24,7 +24,18 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ItemCategory = IDL.Variant({
+  'ceramic' : IDL.Null,
+  'printed' : IDL.Null,
+});
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const BulkItemInput = IDL.Record({
+  'title' : IDL.Text,
+  'contentType' : IDL.Text,
+  'description' : IDL.Opt(IDL.Text),
+  'category' : ItemCategory,
+  'photo' : ExternalBlob,
+});
 export const ShoppingItem = IDL.Record({
   'productName' : IDL.Text,
   'currency' : IDL.Text,
@@ -40,6 +51,7 @@ export const Item = IDL.Record({
   'createdBy' : IDL.Principal,
   'sold' : IDL.Bool,
   'description' : IDL.Text,
+  'category' : ItemCategory,
   'photo' : ExternalBlob,
   'priceInCents' : IDL.Nat,
 });
@@ -128,8 +140,8 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addToBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'bulkUploadPhotos' : IDL.Func(
-      [IDL.Vec(IDL.Tuple(ExternalBlob, IDL.Text, IDL.Opt(IDL.Text)))],
+  'bulkUploadItems' : IDL.Func(
+      [IDL.Vec(BulkItemInput)],
       [IDL.Vec(IDL.Vec(IDL.Nat8))],
       [],
     ),
@@ -159,7 +171,8 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
   'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
-  'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], []),
+  'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
+  'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], ['query']),
   'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getUserProfile' : IDL.Func(
@@ -209,7 +222,18 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ItemCategory = IDL.Variant({
+    'ceramic' : IDL.Null,
+    'printed' : IDL.Null,
+  });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const BulkItemInput = IDL.Record({
+    'title' : IDL.Text,
+    'contentType' : IDL.Text,
+    'description' : IDL.Opt(IDL.Text),
+    'category' : ItemCategory,
+    'photo' : ExternalBlob,
+  });
   const ShoppingItem = IDL.Record({
     'productName' : IDL.Text,
     'currency' : IDL.Text,
@@ -225,6 +249,7 @@ export const idlFactory = ({ IDL }) => {
     'createdBy' : IDL.Principal,
     'sold' : IDL.Bool,
     'description' : IDL.Text,
+    'category' : ItemCategory,
     'photo' : ExternalBlob,
     'priceInCents' : IDL.Nat,
   });
@@ -310,8 +335,8 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addToBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'bulkUploadPhotos' : IDL.Func(
-        [IDL.Vec(IDL.Tuple(ExternalBlob, IDL.Text, IDL.Opt(IDL.Text)))],
+    'bulkUploadItems' : IDL.Func(
+        [IDL.Vec(BulkItemInput)],
         [IDL.Vec(IDL.Vec(IDL.Nat8))],
         [],
       ),
@@ -341,7 +366,8 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
     'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
-    'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], []),
+    'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
+    'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], ['query']),
     'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getUserProfile' : IDL.Func(

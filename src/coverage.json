@@ -1,46 +1,56 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T07:51:36.413Z",
+  "generatedAt": "2026-02-18T09:09:51.996Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
+    "total": 4,
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-38",
-        "summary": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
+        "id": "REQ-43",
+        "summary": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/AdminBulkUploadPage.tsx",
+          "frontend/src/utils/itemCategory.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/AdminBulkUploadPage.tsx",
+          "frontend/src/utils/itemCategory.ts"
+        ]
+      },
+      {
+        "id": "REQ-44",
+        "summary": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\").",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-39",
-        "summary": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
+        "id": "REQ-45",
+        "summary": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
           "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/utils/itemCategory.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminBulkUploadPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/AdminBulkUploadPage.tsx",
+          "frontend/src/utils/itemCategory.ts"
         ]
       },
       {
-        "id": "REQ-40",
-        "summary": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ItemDetailPage.tsx",
-          "frontend/src/components/ItemCard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ItemDetailPage.tsx",
-          "frontend/src/components/ItemCard.tsx"
-        ]
+        "id": "REQ-46",
+        "summary": "Add a conditional backend state migration to support upgrading existing stored items when introducing the new category field, assigning a safe default category to all existing items.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -51,9 +61,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/ItemCard.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminBulkUploadPage.tsx",
-    "frontend/src/pages/ItemDetailPage.tsx",
+    "frontend/src/utils/itemCategory.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

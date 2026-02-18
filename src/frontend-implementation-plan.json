@@ -1,47 +1,51 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin clarity and diagnostics for unpublished items vs broken item images",
+  "title": "Admin bulk upload: require category selection and send to backend",
   "requirements": [
     {
-      "id": "REQ-39",
-      "summary": "Communicate that newly uploaded items are drafts/unpublished and guide admins to publish them without changing the storefront published-only rule.",
+      "id": "REQ-43",
+      "summary": "Add a required category selector to the Admin Bulk Photo Upload page with exactly two options (\"3D printed\", \"Ceramic\").",
       "acceptanceCriteria": [
-        "After a successful bulk upload, the admin UI shows clear English text that newly uploaded items are created as unpublished/drafts and will not appear on the storefront until published.",
-        "The bulk upload flow provides an obvious next step for admins (e.g., navigate to an admin item management view or the item pages) so they can publish the uploaded items.",
-        "This change does not alter the rule that the public storefront grid only displays `published=true` items."
+        "Admin Bulk Photo Upload page shows a clearly labeled category control before upload starts.",
+        "Category selection is required; attempting to upload without selecting a category shows a clear English error message and does not start uploading.",
+        "The only selectable values are \"3D printed\" and \"Ceramic\" (spelled exactly as shown)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
           "operation": "modify",
-          "description": "Update the post-upload success UI to explicitly explain that newly uploaded items are created as Unpublished/Draft and therefore won't appear on the public storefront until published; store returned item IDs in state and present clear next-step actions (e.g., button to go to /admin and links/buttons to open each uploaded item detail page where the admin can publish). Use existing admin role gating on the page. Verify the blob-storage component's usage instructions before implementing (uploads use ExternalBlob and direct URL behavior affects expectations)."
+          "description": "Add a clearly labeled, required category control (two choices only: \"3D printed\" and \"Ceramic\") that must be selected before starting upload; validate on upload click and show an English error (e.g., toast + inline hint) if missing."
         },
         {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Ensure navigation entry points remain discoverable for admins after the bulk upload guidance change (e.g., confirm existing /admin and /admin/upload routes remain wired and that success-call-to-action destinations exist)."
+          "path": "frontend/src/utils/itemCategory.ts",
+          "operation": "create",
+          "description": "Introduce shared frontend constants/helpers for the two allowed category UI labels (\"3D printed\", \"Ceramic\") and mapping to backend ItemCategory enum values to prevent typos and enforce the two-option constraint."
         }
       ]
     },
     {
-      "id": "REQ-40",
-      "summary": "Add admin-visible diagnostics on item detail when an item image fails to load, while keeping storefront card placeholder behavior unchanged and logs non-sensitive.",
+      "id": "REQ-45",
+      "summary": "Send the selected category with each created item during admin bulk upload and show clear errors if the backend rejects missing/unknown categories.",
       "acceptanceCriteria": [
-        "When an item image fails to load (e.g., 404 from `photo.getDirectURL()`), the UI falls back to the existing placeholder image and also shows a small, clear English indicator on the item detail page for admins (e.g., “Image failed to load”).",
-        "The existing storefront item card placeholder behavior remains intact (no broken-image icons shown to users).",
-        "Console logging (if any) does not include sensitive data and is limited to actionable debugging information."
+        "Bulk upload request includes the selected category for the items being created.",
+        "If the backend rejects an unknown/missing category, the UI shows a clear English error message and keeps the admin on the upload page."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "When the item image fails to load, continue falling back to the existing placeholder and, if the viewer is an admin (use existing isAdmin state), render a small, clear English diagnostic near the image such as “Image failed to load”. Optionally add a minimal console.warn with only non-sensitive info (e.g., item id string + that image load failed). Use the blob-storage ExternalBlob.getDirectURL() behavior for image URLs; verify the blob-storage component's usage instructions before implementing."
+          "description": "Update the bulk upload React Query mutation to accept a required selected category and include it with each item creation payload sent to the backend (use the backend ItemCategory enum); ensure backend errors for missing/unknown categories surface as readable English errors for the page to display."
         },
         {
-          "path": "frontend/src/components/ItemCard.tsx",
+          "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
           "operation": "modify",
-          "description": "Confirm/adjust image fallback behavior so storefront cards continue to show the existing placeholder on load errors without any additional admin-only indicators or broken-image UI. Keep changes minimal to preserve public UX. Verify the blob-storage component's usage instructions before implementing (card uses ExternalBlob.getDirectURL())."
+          "description": "Wire the selected category into the bulk upload mutation call so every uploaded item is created with that category; on backend rejection, show a clear English error message and do not navigate away from the upload page."
+        },
+        {
+          "path": "frontend/src/utils/itemCategory.ts",
+          "operation": "modify",
+          "description": "Use the shared category mapping when building the bulk upload payload to guarantee only the two supported categories are sent."
         }
       ]
     }

@@ -1,56 +1,24 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T07:51:36.410Z",
-  "summary": "REQ-39 appears to be addressed via updated AdminBulkUpload messaging and preserving published-only storefront behavior, but the diff evidence is insufficient to confirm the backend blob persistence fix (REQ-38) or the admin-only broken-image indicator on item detail (REQ-40). The diff also includes several likely-unrequested additions (migration scaffolding and expanded Stripe/basket/publishing hook functionality).",
+  "generatedAt": "2026-02-18T09:09:51.992Z",
+  "summary": "Diff adds an ItemCategory type and category fields (including a migration defaulting existing items), plus a required category selector on the Admin Bulk Upload page and frontend utilities to map UI labels to backend enums. However, the diff summary does not provide direct evidence that the backend bulk-upload creation logic actually stores the selected category on each created item or that item-fetch endpoints return it (beyond type changes).",
   "missing_requirements": [
     {
-      "id": "REQ-38",
-      "requirement": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference (including correct contentType).",
-      "reason": "backend/main.mo is truncated and does not show any concrete changes to the upload/store/replace-image logic or any explicit persistence repair; only the addition of storage mixin/migration wiring is visible, which is not enough to confirm the acceptance criteria (HTTP 200 direct URL, persistence across sessions, correct contentType).",
+      "id": "REQ-44",
+      "requirement": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\"), and ensure getItem/getItems/getStorefrontItems return it.",
+      "reason": "While backend types were updated to include `category` and `BulkItemInput` includes `category`, the provided backend diff is truncated and does not show the bulk upload item-creation logic or the implementations of getItem/getItems/getStorefrontItems returning stored category values.",
       "evidence": [
-        "backend/main.mo (truncated)",
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "id": "REQ-40",
-      "requirement": "On item detail page for admins, when an item image fails to load, fall back to placeholder and also show a small clear English indicator (e.g., “Image failed to load”), while keeping storefront item cards’ placeholder behavior intact.",
-      "reason": "ItemCard clearly implements placeholder fallback on error, but ItemDetailPage.tsx (as shown) only demonstrates placeholder fallback state and does not show any admin-only on-page indicator text/alert; the file is truncated so the indicator cannot be confirmed from the provided diff excerpt.",
-      "evidence": [
-        "frontend/src/components/ItemCard.tsx",
-        "frontend/src/pages/ItemDetailPage.tsx (truncated)"
+        "backend/main.mo (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added an upgrade migration module and wired the actor to run a migration on upgrade even though the request only allowed migration.mo if required to preserve/repair persisted state.",
-      "reason": "BuildRequest constrains creation of backend/migration.mo to cases where an upgrade is required; the diff adds backend/migration.mo but (as shown) it is a no-op identity migration, and the diff summary does not demonstrate a state-repair necessity.",
+      "description": "UI/utility mapping includes a fallback label of \"Unknown\" for unexpected backend enum values.",
+      "reason": "The request constrained categories to exactly two values and did not ask for an \"Unknown\" display state; this adds extra behavior beyond the two-category requirement.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (with migration = Migration.run)"
-      ]
-    },
-    {
-      "description": "Implemented/introduced multi-item basket checkout hook (useCreateCheckoutSessionFromBasket).",
-      "reason": "Not requested by REQ-38/39/40; this expands payments behavior beyond the scope of fixing image persistence and frontend diagnostics/messaging.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/hooks/useStripe.ts)"
-      ]
-    },
-    {
-      "description": "Added new publish/unpublish mutations in frontend query hooks.",
-      "reason": "REQ-39 asks for messaging and guidance, not new publish/unpublish backend mutation functionality (and the diff summary does not tie this explicitly to only messaging).",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/hooks/useQueries.ts)"
-      ]
-    },
-    {
-      "description": "Added bulk-upload post-upload verification utility (verifyBulkUpload) and a verification step in the AdminBulkUpload flow.",
-      "reason": "REQ-39/40 focus on messaging and diagnostics; adding an explicit verification phase is additional functionality not explicitly requested.",
-      "evidence": [
-        "frontend/src/pages/AdminBulkUploadPage.tsx (truncated, imports verifyBulkUpload and calls it)"
+        "frontend/src/utils/itemCategory.ts"
       ]
     }
   ],
@@ -59,9 +27,9 @@
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/ItemCard.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminBulkUploadPage.tsx",
-    "frontend/src/pages/ItemDetailPage.tsx",
+    "frontend/src/utils/itemCategory.ts",
     "project_state.json"
   ]
 }

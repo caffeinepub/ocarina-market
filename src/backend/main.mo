@@ -4,14 +4,12 @@ import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Migration "migration";
-
 import MixinAuthorization "authorization/MixinAuthorization";
 import OutCall "http-outcalls/outcall";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Blob "mo:core/Blob";
 import Iter "mo:core/Iter";
-import Text "mo:core/Text";
 import List "mo:core/List";
 
 (with migration = Migration.run)
@@ -22,6 +20,8 @@ actor {
   include MixinAuthorization(accessControlState);
 
   // Types
+  public type ItemCategory = { #printed; #ceramic };
+
   public type Item = {
     id : Blob;
     photo : Storage.ExternalBlob;
@@ -32,6 +32,7 @@ actor {
     sold : Bool;
     published : Bool;
     createdBy : Principal;
+    category : ItemCategory;
   };
 
   public type MediaKind = {
@@ -68,6 +69,14 @@ actor {
     items : [Item];
     headerAsset : BrandingAsset;
     heroText : StorefrontHeroText;
+  };
+
+  public type BulkItemInput = {
+    photo : Storage.ExternalBlob;
+    contentType : Text;
+    description : ?Text;
+    title : Text;
+    category : ItemCategory;
   };
 
   let descriptionExamples = [
@@ -250,7 +259,7 @@ actor {
   // User profile management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
     userProfiles.get(caller);
   };
@@ -270,12 +279,12 @@ actor {
   };
 
   // Admin functions
-  public shared ({ caller }) func bulkUploadPhotos(creations : [(Storage.ExternalBlob, Text, ?Text)]) : async [Blob] {
+  public shared ({ caller }) func bulkUploadItems(itemsInput : [BulkItemInput]) : async [Blob] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can upload photos");
+      Runtime.trap("Unauthorized: Only admins can upload items");
     };
 
-    creations.map(func((photo, contentType, maybeDescription)) { createStoreItem(photo, contentType, maybeDescription, caller) });
+    itemsInput.map(func(item) { createStoreItem(item, caller) });
   };
 
   public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
@@ -315,7 +324,7 @@ actor {
     branding := ?brand;
   };
 
-  public shared ({ caller }) func getStorefrontHeroText() : async StorefrontHeroText {
+  public query func getStorefrontHeroText() : async StorefrontHeroText {
     switch (branding) {
       case (null) { #default };
       case (?brand) { brand.storefrontHeroText };
@@ -387,6 +396,18 @@ actor {
     };
   };
 
+  public query func getItemsByCategory(category : ItemCategory) : async [Item] {
+    let filteredItems = List.empty<Item>();
+
+    for ((_, item) in items.entries()) {
+      if (item.category == category) {
+        filteredItems.add(item);
+      };
+    };
+
+    filteredItems.toArray();
+  };
+
   public query func getItems() : async [Item] {
     items.values().toArray();
   };
@@ -410,8 +431,8 @@ actor {
   };
 
   // Internal helpers
-  func createStoreItem(photo : Storage.ExternalBlob, contentType : Text, maybeDescription : ?Text, creator : Principal) : Blob {
-    let description = switch (maybeDescription) {
+  func createStoreItem(itemInput : BulkItemInput, creator : Principal) : Blob {
+    let description = switch (itemInput.description) {
       case (null) { getDefaultDescription() };
       case (?desc) { desc };
     };
@@ -420,18 +441,19 @@ actor {
     };
 
     let item : Item = {
-      id = photo;
-      title = "ocarina";
-      photo;
-      contentType;
+      id = itemInput.photo;
+      title = itemInput.title;
+      photo = itemInput.photo;
+      contentType = itemInput.contentType;
       description;
       priceInCents = 0;
       sold = false;
-      published = false;
+      published = true;
       createdBy = creator;
+      category = itemInput.category;
     };
-    items.add(photo, item);
-    photo;
+    items.add(itemInput.photo, item);
+    itemInput.photo;
   };
 
   func getDefaultDescription() : Text {
@@ -445,4 +467,3 @@ actor {
     };
   };
 };
-
