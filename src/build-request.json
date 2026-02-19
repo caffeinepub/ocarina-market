@@ -1,69 +1,114 @@
 {
   "kind": "build_request",
-  "title": "Fix app loading failure after deployment",
-  "priority": "high",
+  "title": "Replace itinerary management with item management",
+  "projectName": "Folk Market",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Diagnose and fix the root cause preventing the application from loading or rendering any content on the webpage",
-      "target": "both",
+      "text": "Remove all itinerary-related types and functions from the backend main actor, including Itinerary type, Location type, and all itinerary CRUD operations (createItinerary, getItineraries, updateItinerary, deleteItinerary)",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-recent"
         ],
         "quotes": [
-          "The app doesnt load anything"
+          "Replace itinerary management for item management"
         ]
       },
       "acceptanceCriteria": [
-        "The application loads successfully in the browser",
-        "The storefront page renders with hero section and item grid",
-        "No JavaScript errors appear in the browser console",
-        "Authentication and navigation work properly"
+        "Itinerary and Location types are completely removed from backend/main.mo",
+        "All itinerary-related public functions are removed from the backend actor",
+        "No compilation errors after removing itinerary code"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Verify the backend actor is responding correctly to frontend requests and all canister endpoints are accessible",
-      "target": "backend",
+      "text": "Remove all itinerary-related frontend pages, components, and routes including ItineraryPage, AdminItineraryManagementPage, and ItineraryForm component",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-recent"
+        ],
+        "quotes": [
+          "Replace itinerary management for item management"
         ]
       },
       "acceptanceCriteria": [
-        "Backend canister methods respond to queries",
-        "No runtime errors in backend actor initialization",
-        "CRUD operations for items and categories function correctly"
+        "ItineraryPage.tsx is removed from frontend/src/pages",
+        "AdminItineraryManagementPage.tsx is removed from frontend/src/pages",
+        "ItineraryForm.tsx is removed from frontend/src/components",
+        "All itinerary routes are removed from App.tsx",
+        "Itinerary navigation link is removed from the header"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the frontend routing and React component rendering pipeline is functioning after the Version 19 deployment",
+      "text": "Remove itinerary-related React Query hooks from useQueries.ts including useItinerariesQuery, useCreateItinerary, useUpdateItinerary, and useDeleteItinerary",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-recent"
+        ],
+        "quotes": [
+          "Replace itinerary management for item management"
         ]
       },
       "acceptanceCriteria": [
-        "TanStack Router initializes and renders routes correctly",
-        "React Query provider and hooks work without errors",
-        "All page components mount and display content",
-        "Internet Identity authentication flow is operational"
+        "All itinerary query hooks are removed from frontend/src/hooks/useQueries.ts",
+        "No compilation errors after removing itinerary hooks"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add quantity field display to ItemCard component showing the available quantity for each item",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "show quantity"
+        ]
+      },
+      "acceptanceCriteria": [
+        "ItemCard displays the quantity value from the Item type",
+        "Quantity is clearly labeled and visible on each item card",
+        "Quantity display updates when item quantity changes"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Implement item sorting on the storefront by categories (Ceramic vs 3D Printed) as primary sort, then by subcategories (shape categories) as secondary sort within each category",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "sorted by categories and subcategories"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Items are grouped first by category (Ceramic, 3D Printed)",
+        "Within each category group, items are sorted by their shape subcategory",
+        "Sorting is applied automatically on the storefront page",
+        "Sorting works with existing filter and sort controls"
       ]
     }
   ],
   "constraints": [
-    "Preserve all existing functionality from Version 19",
-    "Do not modify the single-actor backend architecture",
-    "Maintain compatibility with deployed Stripe integration",
-    "Keep existing shape category system and admin features intact"
+    "Do not modify immutable frontend paths: useInternetIdentity.ts, useInternetIdentity.tsx, useActor.ts, main.tsx, or components/ui",
+    "Preserve single-actor backend architecture with all logic in main.mo",
+    "Maintain existing basket functionality and checkout flow",
+    "Keep existing admin features for items, branding, and Stripe configuration"
   ],
   "nonGoals": [
-    "Adding new features or functionality",
-    "Redesigning the UI or user experience",
-    "Changing the technology stack or dependencies"
+    "Adding new item management features beyond quantity display and sorting",
+    "Modifying existing item CRUD operations",
+    "Changing the basket or checkout functionality",
+    "Altering admin permissions or access control",
+    "Implementing new filtering options"
   ],
   "imageRequirements": {
     "required": [],

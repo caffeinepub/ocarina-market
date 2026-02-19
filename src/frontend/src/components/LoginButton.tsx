@@ -1,7 +1,7 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, User, Settings, Upload, Tag } from 'lucide-react';
+import { LogIn, LogOut, User, Settings, Upload } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,13 +76,9 @@ export default function LoginButton() {
               <Settings className="mr-2 h-4 w-4" />
               Admin Panel
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: '/admin/upload' })}>
+            <DropdownMenuItem onClick={() => navigate({ to: '/admin/bulk-upload' })}>
               <Upload className="mr-2 h-4 w-4" />
               Bulk Upload
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: '/admin/shape-categories' })}>
-              <Tag className="mr-2 h-4 w-4" />
-              Shape Categories
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>

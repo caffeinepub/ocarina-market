@@ -1,32 +1,29 @@
 import { useState } from 'react';
-import { useSetStripeConfiguration } from '../hooks/useStripe';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useIsStripeConfigured, useSetStripeConfiguration } from '../hooks/useStripe';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { StripeConfiguration } from '../backend';
 
-interface StripeSetupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export default function StripeSetup({ open, onOpenChange }: StripeSetupProps) {
+export default function StripeSetup() {
+  const { data: isConfigured } = useIsStripeConfigured();
+  const setConfiguration = useSetStripeConfiguration();
+  const [open, setOpen] = useState(false);
   const [secretKey, setSecretKey] = useState('');
-  const [countries, setCountries] = useState('US,CA,GB');
-  const setStripeConfig = useSetStripeConfiguration();
+  const [countries, setCountries] = useState('AU,US,GB,CA');
 
   const handleSave = async () => {
     if (!secretKey.trim()) {
-      toast.error('Please enter your Stripe secret key');
+      toast.error('Please enter a Stripe secret key');
       return;
     }
 
     const allowedCountries = countries
       .split(',')
-      .map(c => c.trim().toUpperCase())
-      .filter(c => c.length === 2);
+      .map((c) => c.trim().toUpperCase())
+      .filter((c) => c.length > 0);
 
     if (allowedCountries.length === 0) {
       toast.error('Please enter at least one country code');
@@ -34,66 +31,60 @@ export default function StripeSetup({ open, onOpenChange }: StripeSetupProps) {
     }
 
     try {
-      await setStripeConfig.mutateAsync({
+      const config: StripeConfiguration = {
         secretKey: secretKey.trim(),
         allowedCountries,
-      });
-      toast.success('Stripe configured successfully');
-      onOpenChange(false);
+      };
+
+      await setConfiguration.mutateAsync(config);
+      toast.success('Stripe configuration saved');
+      setOpen(false);
       setSecretKey('');
-    } catch (error) {
-      toast.error('Failed to configure Stripe');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save configuration');
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant={isConfigured ? 'outline' : 'default'} className="w-full">
+          {isConfigured ? 'Reconfigure Stripe' : 'Configure Stripe'}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Configure Stripe Payments
-          </DialogTitle>
-          <DialogDescription>
-            Enter your Stripe secret key and allowed countries to enable payments.
-          </DialogDescription>
+          <DialogTitle>Stripe Configuration</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="secretKey">Stripe Secret Key</Label>
+            <Label htmlFor="secretKey">Secret Key</Label>
             <Input
               id="secretKey"
               type="password"
-              placeholder="sk_test_..."
               value={secretKey}
               onChange={(e) => setSecretKey(e.target.value)}
+              placeholder="sk_test_..."
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="countries">Allowed Countries (comma-separated)</Label>
             <Input
               id="countries"
-              placeholder="US,CA,GB"
               value={countries}
               onChange={(e) => setCountries(e.target.value)}
+              placeholder="AU,US,GB,CA"
             />
             <p className="text-xs text-muted-foreground">
-              Use 2-letter country codes (e.g., US, CA, GB, FR)
+              Enter country codes separated by commas (e.g., AU, US, GB, CA)
             </p>
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={setStripeConfig.isPending}
+          <Button
+            onClick={handleSave}
+            disabled={setConfiguration.isPending}
             className="w-full"
           >
-            {setStripeConfig.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Configuration'
-            )}
+            {setConfiguration.isPending ? 'Saving...' : 'Save Configuration'}
           </Button>
         </div>
       </DialogContent>

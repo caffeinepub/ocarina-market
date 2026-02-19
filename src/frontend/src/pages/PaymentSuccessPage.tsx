@@ -1,87 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useGetStripeSessionStatus } from '../hooks/useStripe';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBasket } from '../hooks/useBasket';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Loader2 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { StripeSessionStatus } from '../backend';
+import { CheckCircle } from 'lucide-react';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { clearBasket } = useBasket();
-  const [sessionStatus, setSessionStatus] = useState<StripeSessionStatus | null>(null);
-
-  // Extract session_id from URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const sessionId = urlParams.get('session_id');
-
-  const getSessionStatus = useGetStripeSessionStatus();
 
   useEffect(() => {
-    // Invalidate items to refresh sold status regardless of session status
-    // This ensures the storefront reflects any changes after payment
-    queryClient.invalidateQueries({ queryKey: ['items'] });
-    queryClient.invalidateQueries({ queryKey: ['multipleItems'] });
-    
     // Clear basket on successful payment
     clearBasket();
-
-    // Fetch session status if sessionId is available
-    if (sessionId) {
-      getSessionStatus.mutateAsync(sessionId)
-        .then(status => setSessionStatus(status))
-        .catch(error => {
-          console.error('Failed to fetch session status:', error);
-        });
-    }
-  }, [sessionId, queryClient, clearBasket]);
-
-  const isLoading = getSessionStatus.isPending;
-  const isError = getSessionStatus.isError;
+    queryClient.invalidateQueries({ queryKey: ['items'] });
+  }, [clearBasket, queryClient]);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-md mx-auto text-center space-y-6">
-        {isLoading ? (
-          <>
-            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
-            <h1 className="text-2xl font-bold">Confirming Payment...</h1>
-            <p className="text-muted-foreground">
-              Please wait while we verify your payment.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="flex justify-center">
-              <div className="rounded-full bg-primary/10 p-6">
-                <CheckCircle2 className="h-16 w-16 text-primary" />
-              </div>
-            </div>
-            <h1 className="text-3xl font-bold">Payment Successful!</h1>
-            <p className="text-muted-foreground">
-              Thank you for your purchase. Your order has been confirmed.
-            </p>
-            {sessionStatus?.__kind__ === 'completed' && (
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  You will receive a confirmation email shortly.
-                </p>
-              </div>
-            )}
-            {isError && (
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Payment completed successfully. Thank you for your purchase!
-                </p>
-              </div>
-            )}
-            <Button onClick={() => navigate({ to: '/' })} size="lg">
-              Return to Storefront
-            </Button>
-          </>
-        )}
+    <div className="container px-4 py-12">
+      <div className="max-w-2xl mx-auto text-center">
+        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-6" />
+        <h1 className="text-3xl font-serif font-bold mb-4">Payment Successful!</h1>
+        <p className="text-muted-foreground mb-8">
+          Thank you for your purchase. Your order has been confirmed.
+        </p>
+        <Button onClick={() => navigate({ to: '/' })} size="lg">
+          Continue Shopping
+        </Button>
       </div>
     </div>
   );

@@ -1,103 +1,35 @@
-import { useState, useRef } from 'react';
-import { useIsCallerAdmin, useBulkUploadPhotos, useGetShapeCategories } from '../hooks/useQueries';
-import { useActor } from '../hooks/useActor';
-import AccessDeniedScreen from '../components/AccessDeniedScreen';
+import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useIsCallerAdmin, useBulkUploadItems } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
-import { ItemCategory } from '../backend';
-import { getLabelFromCategory } from '../utils/itemCategory';
 import { toast } from 'sonner';
-import { verifyBulkUpload } from '../utils/bulkUploadVerification';
+import { ArrowLeft, Upload, X } from 'lucide-react';
+import AccessDeniedScreen from '../components/AccessDeniedScreen';
+import { ExternalBlob, ItemCategory, BulkItemInput } from '../backend';
 
 export default function AdminBulkUploadPage() {
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
-  const { data: shapeCategories, isLoading: categoriesLoading } = useGetShapeCategories();
-  const { actor } = useActor();
-  const bulkUpload = useBulkUploadPhotos();
+  const navigate = useNavigate();
+  const { data: isAdmin, isLoading: isLoadingAdmin } = useIsCallerAdmin();
+  const bulkUpload = useBulkUploadItems();
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<ItemCategory>(ItemCategory.ceramic);
-  const [selectedShapeCategory, setSelectedShapeCategory] = useState<string>('');
-  const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationComplete, setVerificationComplete] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [category, setCategory] = useState<ItemCategory>(ItemCategory.ceramic);
+  const [shapeCategory, setShapeCategory] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (imageFiles.length !== files.length) {
-      toast.error('Some files were skipped (only images are allowed)');
-    }
-    
-    setSelectedFiles(imageFiles);
-    setUploadProgress({});
-    setVerificationComplete(false);
-  };
-
-  const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      toast.error('Please select at least one image');
-      return;
-    }
-
-    if (!selectedShapeCategory) {
-      toast.error('Please select a shape subcategory');
-      return;
-    }
-
-    try {
-      const itemIds = await bulkUpload.mutateAsync({
-        files: selectedFiles,
-        category: selectedCategory,
-        shapeCategory: selectedShapeCategory,
-        onProgress: (index, percentage) => {
-          setUploadProgress(prev => ({ ...prev, [index]: percentage }));
-        },
-      });
-
-      toast.success(`Successfully uploaded ${itemIds.length} items`);
-
-      if (actor) {
-        setIsVerifying(true);
-        try {
-          await verifyBulkUpload(itemIds, actor);
-          setVerificationComplete(true);
-          toast.success('All items verified and accessible');
-        } catch (verifyError: any) {
-          console.error('Verification error:', verifyError);
-          toast.error(verifyError.message || 'Verification failed');
-        } finally {
-          setIsVerifying(false);
-        }
-      }
-
-      setSelectedFiles([]);
-      setUploadProgress({});
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload items');
-      setIsVerifying(false);
-    }
-  };
-
-  const overallProgress = selectedFiles.length > 0
-    ? Object.values(uploadProgress).reduce((sum, val) => sum + val, 0) / selectedFiles.length
-    : 0;
-
-  if (adminLoading || categoriesLoading) {
+  if (isLoadingAdmin) {
     return (
-      <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container px-4 py-12">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -106,116 +38,134 @@ export default function AdminBulkUploadPage() {
     return <AccessDeniedScreen />;
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
-          <Upload className="h-8 w-8" />
-          Bulk Photo Upload
-        </h1>
-        <p className="text-muted-foreground">
-          Upload multiple photos to create ocarina items. Items will be automatically published with names matching the selected shape subcategory.
-        </p>
-      </div>
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
 
-      <Card>
+  const handleRemoveFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleUpload = async () => {
+    if (files.length === 0) {
+      toast.error('Please select at least one file');
+      return;
+    }
+
+    if (!shapeCategory.trim()) {
+      toast.error('Please enter a shape category');
+      return;
+    }
+
+    try {
+      const items: BulkItemInput[] = await Promise.all(
+        files.map(async (file, index) => {
+          const arrayBuffer = await file.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          const photo = ExternalBlob.fromBytes(bytes).withUploadProgress((percentage) => {
+            setUploadProgress((prev) => ({ ...prev, [file.name]: percentage }));
+          });
+
+          return {
+            photo,
+            contentType: file.type,
+            description: `Item ${index + 1}`,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            category,
+            shapeCategory: shapeCategory.trim(),
+            quantity: BigInt(0),
+          };
+        })
+      );
+
+      await bulkUpload.mutateAsync(items);
+      toast.success(`Successfully uploaded ${files.length} items`);
+      setFiles([]);
+      setUploadProgress({});
+      navigate({ to: '/admin' });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload items');
+    }
+  };
+
+  return (
+    <div className="container px-4 py-12">
+      <Button
+        variant="ghost"
+        onClick={() => navigate({ to: '/admin' })}
+        className="mb-6"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Admin Panel
+      </Button>
+
+      <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Upload Configuration</CardTitle>
-          <CardDescription>
-            Select category, shape subcategory, and photos to upload
-          </CardDescription>
+          <CardTitle className="text-2xl font-serif">Bulk Upload Items</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Category Selection */}
           <div className="space-y-2">
-            <Label htmlFor="category">Item Category</Label>
+            <Label htmlFor="category">Category</Label>
             <Select
-              value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value as ItemCategory)}
+              value={category}
+              onValueChange={(value) => setCategory(value as ItemCategory)}
             >
               <SelectTrigger id="category">
-                <SelectValue />
+                <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ItemCategory.ceramic}>
-                  {getLabelFromCategory(ItemCategory.ceramic)}
-                </SelectItem>
-                <SelectItem value={ItemCategory.printed}>
-                  {getLabelFromCategory(ItemCategory.printed)}
-                </SelectItem>
+                <SelectItem value={ItemCategory.ceramic}>Ceramic</SelectItem>
+                <SelectItem value={ItemCategory.printed}>3D Printed</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Shape Subcategory Selection */}
           <div className="space-y-2">
-            <Label htmlFor="shape-category">Shape Subcategory</Label>
-            {!shapeCategories || shapeCategories.length === 0 ? (
-              <div className="p-4 border border-border rounded-lg bg-muted/30">
-                <p className="text-sm text-muted-foreground">
-                  No shape subcategories available. Please add some in the Shape Categories management page.
-                </p>
-              </div>
-            ) : (
-              <Select
-                value={selectedShapeCategory}
-                onValueChange={setSelectedShapeCategory}
-              >
-                <SelectTrigger id="shape-category">
-                  <SelectValue placeholder="Select a shape subcategory" />
-                </SelectTrigger>
-                <SelectContent>
-                  {shapeCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Label htmlFor="shapeCategory">Shape Category</Label>
+            <Input
+              id="shapeCategory"
+              value={shapeCategory}
+              onChange={(e) => setShapeCategory(e.target.value)}
+              placeholder="e.g., Bowl, Vase, Cup"
+            />
           </div>
 
-          {/* File Selection */}
           <div className="space-y-2">
-            <Label htmlFor="photos">Select Photos</Label>
+            <Label htmlFor="files">Photos</Label>
             <Input
-              ref={fileInputRef}
-              id="photos"
+              id="files"
               type="file"
               accept="image/*"
               multiple
-              onChange={handleFileSelect}
-              disabled={bulkUpload.isPending}
+              onChange={handleFileChange}
             />
-            {selectedFiles.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
-              </p>
-            )}
           </div>
 
-          {/* Preview Grid */}
-          {selectedFiles.length > 0 && (
-            <div className="space-y-3">
-              <Label>Preview</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {selectedFiles.map((file, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <Label>Selected Files ({files.length})</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {files.map((file, index) => (
+                  <div key={index} className="relative group">
                     <img
                       src={URL.createObjectURL(file)}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      alt={file.name}
+                      className="w-full h-32 object-cover rounded border"
                     />
-                    {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="text-white text-sm font-medium">
-                          {Math.round(uploadProgress[index])}%
-                        </div>
-                      </div>
-                    )}
-                    {uploadProgress[index] === 100 && (
-                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="h-8 w-8 text-green-600" />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveFile(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    {uploadProgress[file.name] !== undefined && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
+                        {Math.round(uploadProgress[file.name])}%
                       </div>
                     )}
                   </div>
@@ -224,72 +174,24 @@ export default function AdminBulkUploadPage() {
             </div>
           )}
 
-          {/* Upload Progress */}
-          {bulkUpload.isPending && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Upload Progress</span>
-                <span className="font-medium">{Math.round(overallProgress)}%</span>
-              </div>
-              <Progress value={overallProgress} />
-            </div>
-          )}
-
-          {/* Verification Status */}
-          {isVerifying && (
-            <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-muted/30">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm">Verifying uploaded items...</span>
-            </div>
-          )}
-
-          {verificationComplete && (
-            <div className="flex items-center gap-2 p-4 border border-green-600 rounded-lg bg-green-50 dark:bg-green-950/20">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span className="text-sm text-green-700 dark:text-green-400">
-                All items uploaded and verified successfully
-              </span>
-            </div>
-          )}
-
-          {/* Upload Button */}
           <Button
             onClick={handleUpload}
-            disabled={bulkUpload.isPending || selectedFiles.length === 0 || !selectedShapeCategory || isVerifying}
+            disabled={bulkUpload.isPending || files.length === 0}
             className="w-full"
             size="lg"
           >
             {bulkUpload.isPending ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Uploading {selectedFiles.length} item{selectedFiles.length !== 1 ? 's' : ''}...
-              </>
-            ) : isVerifying ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Verifying...
+                <Upload className="mr-2 h-5 w-5 animate-pulse" />
+                Uploading...
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-5 w-5" />
-                Upload {selectedFiles.length} Item{selectedFiles.length !== 1 ? 's' : ''}
+                Upload {files.length} Item{files.length !== 1 ? 's' : ''}
               </>
             )}
           </Button>
-
-          {/* Info Message */}
-          <div className="flex items-start gap-2 p-4 border border-border rounded-lg bg-muted/30">
-            <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium mb-1">Upload Notes:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>All items will be automatically published</li>
-                <li>Item names will match the selected shape subcategory</li>
-                <li>Default descriptions will be assigned based on category</li>
-                <li>You can edit individual items after upload</li>
-              </ul>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

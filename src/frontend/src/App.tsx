@@ -1,20 +1,19 @@
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { StrictMode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useBasket } from './hooks/useBasket';
+import { RouterProvider, createRouter, createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
+import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from 'next-themes';
+import { Link } from '@tanstack/react-router';
+import LoginButton from './components/LoginButton';
+import ProfileSetupDialog from './components/ProfileSetupDialog';
 import StorefrontPage from './pages/StorefrontPage';
 import ItemDetailPage from './pages/ItemDetailPage';
-import AdminPanelPage from './pages/AdminPanelPage';
-import AdminBulkUploadPage from './pages/AdminBulkUploadPage';
-import AdminBrandingPage from './pages/AdminBrandingPage';
-import AdminShapeCategoriesPage from './pages/AdminShapeCategoriesPage';
 import BasketPage from './pages/BasketPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailurePage from './pages/PaymentFailurePage';
-import LoginButton from './components/LoginButton';
-import ProfileSetupDialog from './components/ProfileSetupDialog';
-import { Toaster } from '@/components/ui/sonner';
-import { ShoppingBasket } from 'lucide-react';
-import { SiX, SiFacebook, SiInstagram } from 'react-icons/si';
+import AdminPanelPage from './pages/AdminPanelPage';
+import AdminBulkUploadPage from './pages/AdminBulkUploadPage';
+import { useBasket } from './hooks/useBasket';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,88 +25,61 @@ const queryClient = new QueryClient({
 });
 
 function Layout() {
-  const { itemCount } = useBasket();
+  const { getBasketItemCount } = useBasket();
+  const basketCount = getBasketItemCount();
+
+  const appName = 'Folk Market';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold tracking-tight hover:opacity-80 transition-opacity">
-            Ocarina Shop
-          </a>
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <h1 className="text-xl font-serif font-semibold text-foreground">{appName}</h1>
+            </Link>
+          </div>
           <div className="flex items-center gap-4">
-            <a
-              href="/basket"
-              className="relative p-2 hover:bg-muted rounded-lg transition-colors"
-              aria-label="Shopping basket"
+            <Link 
+              to="/basket"
+              className="relative inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 w-10"
             >
-              <ShoppingBasket className="h-6 w-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {itemCount}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="21" r="1"/>
+                <circle cx="19" cy="21" r="1"/>
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+              </svg>
+              {basketCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {basketCount}
                 </span>
               )}
-            </a>
+            </Link>
             <LoginButton />
           </div>
         </div>
       </header>
-
       <main className="flex-1">
         <Outlet />
       </main>
-
-      <footer className="border-t border-border bg-card/30 mt-auto">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>© {new Date().getFullYear()}</span>
-              <span>•</span>
-              <span>Built with ❤️ using</span>
-              <a
-                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium hover:text-foreground transition-colors"
-              >
-                caffeine.ai
-              </a>
-            </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Twitter"
-              >
-                <SiX className="h-5 w-5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Facebook"
-              >
-                <SiFacebook className="h-5 w-5" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Instagram"
-              >
-                <SiInstagram className="h-5 w-5" />
-              </a>
-            </div>
-          </div>
+      <footer className="border-t border-border/40 bg-muted/30 py-6">
+        <div className="container px-4 text-center text-sm text-muted-foreground">
+          <p>
+            © {new Date().getFullYear()} {appName}. Built with{' '}
+            <span className="text-destructive">♥</span> using{' '}
+            <a
+              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline underline-offset-4 hover:text-foreground"
+            >
+              caffeine.ai
+            </a>
+          </p>
         </div>
       </footer>
-
-      <Toaster />
       <ProfileSetupDialog />
+      <Toaster />
     </div>
   );
 }
@@ -122,7 +94,7 @@ const indexRoute = createRoute({
   component: StorefrontPage,
 });
 
-const itemRoute = createRoute({
+const itemDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/item/$itemId',
   component: ItemDetailPage,
@@ -132,30 +104,6 @@ const basketRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/basket',
   component: BasketPage,
-});
-
-const adminPanelRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin',
-  component: AdminPanelPage,
-});
-
-const adminUploadRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin/upload',
-  component: AdminBulkUploadPage,
-});
-
-const adminBrandingRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin/branding',
-  component: AdminBrandingPage,
-});
-
-const adminShapeCategoriesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin/shape-categories',
-  component: AdminShapeCategoriesPage,
 });
 
 const paymentSuccessRoute = createRoute({
@@ -170,24 +118,44 @@ const paymentFailureRoute = createRoute({
   component: PaymentFailurePage,
 });
 
+const adminPanelRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  component: AdminPanelPage,
+});
+
+const adminBulkUploadRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/bulk-upload',
+  component: AdminBulkUploadPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  itemRoute,
+  itemDetailRoute,
   basketRoute,
-  adminPanelRoute,
-  adminUploadRoute,
-  adminBrandingRoute,
-  adminShapeCategoriesRoute,
   paymentSuccessRoute,
   paymentFailureRoute,
+  adminPanelRoute,
+  adminBulkUploadRoute,
 ]);
 
 const router = createRouter({ routeTree });
 
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <StrictMode>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </StrictMode>
   );
 }

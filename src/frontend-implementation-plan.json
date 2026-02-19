@@ -1,99 +1,91 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix app loading failure after deployment",
+  "title": "Replace itinerary management with item management",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Diagnose and fix the root cause preventing the application from loading or rendering any content on the webpage",
+      "id": "REQ-2",
+      "summary": "Remove all itinerary-related frontend pages, components, and routes",
       "acceptanceCriteria": [
-        "The application loads successfully in the browser",
-        "The storefront page renders with hero section and item grid",
-        "No JavaScript errors appear in the browser console",
-        "Authentication and navigation work properly"
+        "ItineraryPage.tsx is removed from frontend/src/pages",
+        "AdminItineraryManagementPage.tsx is removed from frontend/src/pages",
+        "ItineraryForm.tsx is removed from frontend/src/components",
+        "All itinerary routes are removed from App.tsx",
+        "Itinerary navigation link is removed from the header"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Add error boundary and console logging to diagnose initialization failures. Verify React Query client configuration and Internet Identity provider setup are correct. Ensure the root element is being properly targeted and the app mounts successfully."
+          "path": "frontend/src/pages/ItineraryPage.tsx",
+          "operation": "delete",
+          "description": "Remove the ItineraryPage component that displays user itineraries with product references, date ranges, notes, and locations"
+        },
+        {
+          "path": "frontend/src/pages/AdminItineraryManagementPage.tsx",
+          "operation": "delete",
+          "description": "Remove the AdminItineraryManagementPage component that provides admin interface for creating, editing, and deleting itineraries"
+        },
+        {
+          "path": "frontend/src/components/ItineraryForm.tsx",
+          "operation": "delete",
+          "description": "Remove the ItineraryForm component used for creating and editing itineraries with product selection, date ranges, notes, and location entries"
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add error handling and fallback UI to the router configuration. Verify TanStack Router initialization is correct and all route paths are properly configured. Add console logging to track router lifecycle and component mounting. Ensure the layout renders even if child routes fail."
-        },
-        {
-          "path": "frontend/src/hooks/useActor.ts",
-          "operation": "modify",
-          "description": "Add error handling and logging for actor initialization failures. Verify the backend actor is being created correctly with the current identity. Add null checks and fallback behavior if actor creation fails. Log canister connection status and any initialization errors."
-        },
-        {
-          "path": "frontend/src/hooks/useInternetIdentity.ts",
-          "operation": "modify",
-          "description": "Add error handling for AuthClient initialization failures. Verify identity persistence and restoration logic. Add logging for authentication state changes. Ensure the provider handles edge cases like missing identity or failed authentication gracefully."
-        },
-        {
-          "path": "frontend/src/pages/StorefrontPage.tsx",
-          "operation": "modify",
-          "description": "Add error boundaries and loading states to prevent rendering failures. Verify data fetching hooks handle null/undefined states gracefully. Add fallback UI for failed branding or item queries. Ensure the hero section and item grid render with placeholder content if backend data is unavailable."
-        },
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Verify the root div element exists and has the correct ID. Add a fallback message that displays if JavaScript fails to load. Check that script tags reference the correct entry point and module type."
+          "description": "Remove all itinerary-related route definitions (ItineraryPage and AdminItineraryManagementPage routes) from the router configuration. Remove imports for ItineraryPage and AdminItineraryManagementPage components. Ensure the header navigation no longer includes the itinerary link."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Ensure the frontend routing and React component rendering pipeline is functioning after the Version 19 deployment",
+      "summary": "Remove itinerary-related React Query hooks from useQueries.ts",
       "acceptanceCriteria": [
-        "TanStack Router initializes and renders routes correctly",
-        "React Query provider and hooks work without errors",
-        "All page components mount and display content",
-        "Internet Identity authentication flow is operational"
+        "All itinerary query hooks are removed from frontend/src/hooks/useQueries.ts",
+        "No compilation errors after removing itinerary hooks"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Verify all route configurations match the expected paths and components. Add suspense boundaries for lazy-loaded routes. Ensure navigation links in the header and footer work correctly. Test that admin routes are properly guarded and accessible only to authenticated admins."
-        },
-        {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add error handling and retry logic to all query hooks. Verify that queries are properly enabled based on actor availability. Add logging for query failures and ensure failed queries don't crash the app. Check that query keys are consistent and invalidation works correctly."
+          "description": "Remove all itinerary-related hooks: useItinerariesQuery, useCreateItinerary, useUpdateItinerary, and useDeleteItinerary. Remove any itinerary-related imports and type definitions. Ensure remaining hooks continue to function properly."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add quantity field display to ItemCard component",
+      "acceptanceCriteria": [
+        "ItemCard displays the quantity value from the Item type",
+        "Quantity is clearly labeled and visible on each item card",
+        "Quantity display updates when item quantity changes"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ItemCard.tsx",
+          "operation": "modify",
+          "description": "Add a quantity display to the ItemCard component that shows the item.quantity value. Place it near the price or in the badge area. Use clear labeling such as 'Quantity: X' or 'Qty: X available'. Ensure it updates reactively when the quantity changes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Implement item sorting on the storefront by categories and subcategories",
+      "acceptanceCriteria": [
+        "Items are grouped first by category (Ceramic, 3D Printed)",
+        "Within each category group, items are sorted by their shape subcategory",
+        "Sorting is applied automatically on the storefront page",
+        "Sorting works with existing filter and sort controls"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/storefrontListing.ts",
+          "operation": "modify",
+          "description": "Add a new sorting function that implements two-level sorting: primary sort by category (ceramic vs printed), then secondary sort by shapeCategory within each category group. Integrate this sorting logic with existing ViewMode filtering and price sorting functionality. Ensure the function returns items sorted first by category, then by subcategory alphabetically within each category."
         },
         {
-          "path": "frontend/src/components/LoginButton.tsx",
+          "path": "frontend/src/pages/StorefrontPage.tsx",
           "operation": "modify",
-          "description": "Verify the authentication flow works correctly with Internet Identity. Add error handling for login failures. Ensure logout clears all cached data and resets application state. Test that the dropdown menu displays admin links only when the user has admin privileges."
-        },
-        {
-          "path": "frontend/src/components/ProfileSetupDialog.tsx",
-          "operation": "modify",
-          "description": "Add proper loading state checks to prevent modal flash on page load. Verify the dialog only shows when the user is authenticated, profile loading is complete, and no profile exists. Use the authorization component's usage instructions to verify component behavior before implementing changes."
-        },
-        {
-          "path": "frontend/src/pages/BasketPage.tsx",
-          "operation": "modify",
-          "description": "Verify basket state persistence and restoration from localStorage. Add error handling for failed item fetches. Ensure checkout flow validates Stripe configuration before redirecting. Test that sold items are filtered out before checkout."
-        },
-        {
-          "path": "frontend/src/pages/ItemDetailPage.tsx",
-          "operation": "modify",
-          "description": "Add error handling for missing or invalid item IDs. Verify image rendering and fallback behavior. Ensure add-to-basket and buy-now buttons work correctly. Test that admin controls only display for authenticated admins."
-        },
-        {
-          "path": "frontend/src/pages/PaymentSuccessPage.tsx",
-          "operation": "modify",
-          "description": "Verify the page correctly fetches Stripe session status and handles both success and error states. Ensure basket clearing and query invalidation work properly after successful payment. Add error handling for failed session status fetches."
-        },
-        {
-          "path": "frontend/src/pages/PaymentFailurePage.tsx",
-          "operation": "modify",
-          "description": "Verify the page renders correctly and provides clear navigation options back to the storefront or basket. Ensure no errors occur during page load."
+          "description": "Apply the new category-subcategory sorting logic from storefrontListing.ts to the items displayed on the storefront. Ensure this sorting is applied after filtering but works in conjunction with any user-selected sort options. The default view should show items grouped by category and sorted by subcategory within each group."
         }
       ]
     }
