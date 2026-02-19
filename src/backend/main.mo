@@ -2,8 +2,9 @@ import Map "mo:core/Map";
 import Storage "blob-storage/Storage";
 import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
+
 import MixinStorage "blob-storage/Mixin";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import OutCall "http-outcalls/outcall";
 import Principal "mo:core/Principal";
@@ -11,6 +12,7 @@ import Runtime "mo:core/Runtime";
 import Blob "mo:core/Blob";
 import Iter "mo:core/Iter";
 import List "mo:core/List";
+import Migration "migration";
 
 (with migration = Migration.run)
 actor {
@@ -93,6 +95,9 @@ actor {
   var stripeConfig : ?Stripe.StripeConfiguration = null;
   var branding : ?Branding = null;
   let baskets = Map.empty<Principal, [Blob]>();
+
+  // 3D printed item specific description for migration
+  let printedItemDescription = "Expertly crafted 3D printed product with clean layer lines and precision detailing. Lightweight material ensures durability without compromising on structural integrity. Ideal for both functional use and display, showcasing the advanced capabilities of modern additive manufacturing. Finished with a professional touch for superior aesthetic appeal. Perfect for collectors and creators seeking high-quality, customizable items.";
 
   // Basket management
   public shared ({ caller }) func addToBasket(itemId : Blob) : async () {
@@ -178,7 +183,7 @@ actor {
                   Runtime.trap("Item is already sold");
                 };
                 {
-                  currency = "eur";
+                  currency = "aud";
                   productName = item.title;
                   productDescription = item.description;
                   priceInCents = item.priceInCents;
@@ -256,6 +261,24 @@ actor {
     );
   };
 
+  // Bulk update descriptions for 3D printed items (admin only)
+  public shared ({ caller }) func updateAllPrintedItemDescriptions(newDescription : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can update item descriptions");
+    };
+
+    if (newDescription == "") {
+      Runtime.trap("Description must not be empty");
+    };
+
+    for ((id, item) in items.entries()) {
+      if (item.category == #printed) {
+        let updatedItem = { item with description = newDescription };
+        items.add(id, updatedItem);
+      };
+    };
+  };
+
   // User profile management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -309,6 +332,21 @@ actor {
         let updatedItem = { item with priceInCents };
         items.add(itemId, updatedItem);
       };
+    };
+  };
+
+  // Admin-only update all items
+  public shared ({ caller }) func updateAllItemPricesByCategory() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    for ((id, item) in items.entries()) {
+      let updatedItem = switch (item.category) {
+        case (#printed) { { item with priceInCents = 900 } };
+        case (#ceramic) { { item with priceInCents = 1900 } };
+      };
+      items.add(id, updatedItem);
     };
   };
 
@@ -370,10 +408,19 @@ actor {
       Runtime.trap("Unauthorized: Only users can perform checkout");
     };
 
+    let itemsWithCurrency = items.map(
+      func(item) {
+        {
+          item with 
+          currency = "aud";
+        };
+      }
+    );
+
     await Stripe.createCheckoutSession(
       getStripeConfiguration(),
       caller,
-      items,
+      itemsWithCurrency,
       successUrl,
       cancelUrl,
       transform,

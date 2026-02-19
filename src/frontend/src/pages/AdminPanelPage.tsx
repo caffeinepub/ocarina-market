@@ -1,18 +1,33 @@
-import { useIsCallerAdmin } from '../hooks/useQueries';
+import { useIsCallerAdmin, useUpdateAllPrintedItemDescriptions } from '../hooks/useQueries';
 import { useIsStripeConfigured } from '../hooks/useStripe';
 import AccessDeniedScreen from '../components/AccessDeniedScreen';
 import StripeSetup from '../components/StripeSetup';
+import CategoryPriceEditor from '../components/CategoryPriceEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, CreditCard, Upload, CheckCircle2, XCircle, Settings, Palette } from 'lucide-react';
+import { Loader2, CreditCard, Upload, CheckCircle2, XCircle, Settings, Palette, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 export default function AdminPanelPage() {
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const { data: isStripeConfigured, isLoading: stripeLoading } = useIsStripeConfigured();
   const [showStripeSetup, setShowStripeSetup] = useState(false);
   const navigate = useNavigate();
+  const updatePrintedDescriptions = useUpdateAllPrintedItemDescriptions();
+
+  const handleUpdatePrintedDescriptions = async () => {
+    const newDescription = "Expertly crafted 3D printed product with clean layer lines and precision detailing. Lightweight material ensures durability without compromising on structural integrity. Ideal for both functional use and display, showcasing the advanced capabilities of modern additive manufacturing. Finished with a professional touch for superior aesthetic appeal. Perfect for collectors and creators seeking high-quality, customizable items.";
+    
+    try {
+      await updatePrintedDescriptions.mutateAsync(newDescription);
+      toast.success('3D printed item descriptions updated successfully');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast.error(error.message || 'Failed to update descriptions');
+    }
+  };
 
   if (adminLoading || stripeLoading) {
     return (
@@ -85,6 +100,9 @@ export default function AdminPanelPage() {
           </CardContent>
         </Card>
 
+        {/* Category Pricing Card */}
+        <CategoryPriceEditor />
+
         {/* Branding Card */}
         <Card>
           <CardHeader>
@@ -128,9 +146,44 @@ export default function AdminPanelPage() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Update 3D Printed Descriptions Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Update 3D Printed Item Descriptions
+            </CardTitle>
+            <CardDescription>
+              Refresh descriptions for all 3D printed items with updated text
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleUpdatePrintedDescriptions}
+              disabled={updatePrintedDescriptions.isPending}
+              className="w-full"
+            >
+              {updatePrintedDescriptions.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Update 3D Printed Descriptions
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      <StripeSetup open={showStripeSetup} onOpenChange={setShowStripeSetup} />
+      <StripeSetup 
+        open={showStripeSetup} 
+        onOpenChange={setShowStripeSetup}
+      />
     </div>
   );
 }

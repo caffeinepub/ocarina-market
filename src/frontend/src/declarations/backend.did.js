@@ -195,6 +195,8 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'unpublishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
+  'updateAllItemPricesByCategory' : IDL.Func([], [], []),
+  'updateAllPrintedItemDescriptions' : IDL.Func([IDL.Text], [], []),
   'updateItemDescription' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [], []),
   'updateItemPhoto' : IDL.Func(
       [IDL.Vec(IDL.Nat8), ExternalBlob, IDL.Text],
@@ -390,6 +392,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'unpublishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
+    'updateAllItemPricesByCategory' : IDL.Func([], [], []),
+    'updateAllPrintedItemDescriptions' : IDL.Func([IDL.Text], [], []),
     'updateItemDescription' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [], []),
     'updateItemPhoto' : IDL.Func(
         [IDL.Vec(IDL.Nat8), ExternalBlob, IDL.Text],

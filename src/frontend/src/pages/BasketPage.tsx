@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { encodeItemId } from '../lib/idEncoding';
+import { formatAudFromCents } from '../utils/currency';
 
 export default function BasketPage() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function BasketPage() {
   const ineligibleItems = items.filter(item => item.sold || item.priceInCents <= 0);
 
   const totalPrice = eligibleItems.reduce((sum, item) => sum + Number(item.priceInCents), 0);
-  const formattedTotal = `$${(totalPrice / 100).toFixed(2)}`;
+  const formattedTotal = formatAudFromCents(totalPrice);
 
   const handleRemoveItem = (itemId: Uint8Array) => {
     removeItem(itemId);
@@ -195,7 +196,7 @@ export default function BasketPage() {
                           </Button>
                         </div>
                         <p className="font-semibold text-primary mt-2">
-                          ${(Number(item.priceInCents) / 100).toFixed(2)}
+                          {formatAudFromCents(item.priceInCents)}
                         </p>
                       </div>
                     </div>

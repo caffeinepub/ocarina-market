@@ -128,6 +128,24 @@ export function useSetItemPrice() {
   });
 }
 
+export function useUpdateAllItemPricesByCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return await actor.updateAllItemPricesByCategory();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+      queryClient.invalidateQueries({ queryKey: ['multipleItems'] });
+    },
+  });
+}
+
 export function useUpdateItemDescription() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -165,6 +183,24 @@ export function useUpdateItemPhoto() {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item'] });
       queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+    },
+  });
+}
+
+export function useUpdateAllPrintedItemDescriptions() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newDescription: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateAllPrintedItemDescriptions(newDescription);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+      queryClient.invalidateQueries({ queryKey: ['multipleItems'] });
     },
   });
 }

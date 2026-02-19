@@ -14,6 +14,7 @@ import AdminItemEditor from '../components/AdminItemEditor';
 import AdminPublishToggle from '../components/AdminPublishToggle';
 import StripeSetup from '../components/StripeSetup';
 import { toast } from 'sonner';
+import { formatAudFromCents } from '../utils/currency';
 
 export default function ItemDetailPage() {
   const { itemId } = useParams({ from: '/items/$itemId' });
@@ -37,7 +38,7 @@ export default function ItemDetailPage() {
     : item?.photo.getDirectURL();
 
   const formattedPrice = item && item.priceInCents > 0 
-    ? `$${(Number(item.priceInCents) / 100).toFixed(2)}`
+    ? formatAudFromCents(item.priceInCents)
     : null;
 
   // Guest checkout enabled: only check item availability, price, and Stripe config
@@ -83,7 +84,7 @@ export default function ItemDetailPage() {
         productDescription: item.description,
         priceInCents: item.priceInCents,
         quantity: BigInt(1),
-        currency: 'usd',
+        currency: 'aud',
       }];
 
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
@@ -148,51 +149,47 @@ export default function ItemDetailPage() {
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
-            {isAdmin && imageError && (
-              <div className="absolute bottom-2 left-2 right-2">
-                <Alert variant="destructive" className="py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    Image failed to load
-                  </AlertDescription>
-                </Alert>
+            {item.sold && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <Badge variant="secondary" className="text-lg px-6 py-2">
+                  Sold
+                </Badge>
               </div>
             )}
           </div>
+
+          {isAdmin && imageError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load item image. The image may be corrupted or unavailable.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* Details */}
         <div className="space-y-6">
           <div>
-            <div className="flex items-start justify-between gap-4 mb-2">
-              <h1 className="text-3xl font-bold capitalize">{item.title}</h1>
-              {item.sold && (
-                <Badge variant="secondary" className="text-base px-3 py-1">
-                  Sold
-                </Badge>
-              )}
-            </div>
+            <h1 className="text-3xl font-bold capitalize mb-2">{item.title}</h1>
             {formattedPrice && (
-              <p className="text-3xl font-bold text-primary mt-2">
-                {formattedPrice}
-              </p>
+              <p className="text-3xl font-bold text-primary">{formattedPrice}</p>
             )}
           </div>
 
-          <div className="prose prose-sm max-w-none">
-            <p className="text-muted-foreground leading-relaxed">
-              {item.description}
-            </p>
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Description</h2>
+            <p className="text-muted-foreground leading-relaxed">{item.description}</p>
           </div>
 
           {/* Purchase Actions */}
-          {canPurchase && (
-            <div className="space-y-3 pt-4 border-t border-border">
+          {!isAdmin && (
+            <div className="space-y-3">
               <Button
-                onClick={handleBuyNow}
-                disabled={createCheckoutSession.isPending}
-                className="w-full"
                 size="lg"
+                className="w-full"
+                onClick={handleBuyNow}
+                disabled={!canPurchase || createCheckoutSession.isPending}
               >
                 {createCheckoutSession.isPending ? (
                   <>
@@ -208,51 +205,41 @@ export default function ItemDetailPage() {
               </Button>
 
               <Button
-                onClick={handleAddToBasket}
-                disabled={isInBasket}
+                size="lg"
                 variant="outline"
                 className="w-full"
-                size="lg"
+                onClick={handleAddToBasket}
+                disabled={!item || item.sold || item.priceInCents <= 0 || isInBasket}
               >
-                {isInBasket ? (
-                  'Already in Basket'
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-5 w-5" />
-                    Add to Basket
-                  </>
-                )}
+                <Plus className="mr-2 h-5 w-5" />
+                {isInBasket ? 'In Basket' : 'Add to Basket'}
               </Button>
+
+              {!canPurchase && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {item.sold 
+                    ? 'This item has been sold'
+                    : item.priceInCents <= 0
+                    ? 'Price not yet set'
+                    : !isStripeConfigured
+                    ? 'Payment system not configured'
+                    : 'Not available for purchase'}
+                </p>
+              )}
             </div>
           )}
 
-          {!canPurchase && !item.sold && (
-            <div className="pt-4 border-t border-border">
-              <p className="text-sm text-muted-foreground">
-                {item.priceInCents <= 0 
-                  ? 'Price not yet set for this item'
-                  : 'Payment system is being configured'}
-              </p>
-            </div>
-          )}
-
-          {/* Admin Section */}
+          {/* Admin Controls */}
           {isAdmin && (
-            <div className="space-y-4 pt-6 border-t-2 border-border">
-              <h3 className="text-lg font-semibold">Admin Controls</h3>
+            <div className="space-y-4 pt-6 border-t border-border">
+              <h2 className="text-xl font-bold">Admin Controls</h2>
               
-              <AdminPublishToggle 
+              <AdminPublishToggle itemId={item.id} isPublished={item.published} />
+              
+              <PriceEditor itemId={item.id} currentPriceInCents={item.priceInCents} />
+              
+              <AdminItemEditor 
                 itemId={item.id} 
-                isPublished={item.published} 
-              />
-
-              <PriceEditor 
-                itemId={item.id} 
-                currentPriceInCents={item.priceInCents} 
-              />
-
-              <AdminItemEditor
-                itemId={item.id}
                 currentDescription={item.description}
                 onPhotoUpdateSuccess={handlePhotoUpdateSuccess}
               />
@@ -261,10 +248,7 @@ export default function ItemDetailPage() {
         </div>
       </div>
 
-      <StripeSetup 
-        open={showStripeSetup} 
-        onOpenChange={setShowStripeSetup} 
-      />
+      <StripeSetup open={showStripeSetup} onOpenChange={setShowStripeSetup} />
     </div>
   );
 }

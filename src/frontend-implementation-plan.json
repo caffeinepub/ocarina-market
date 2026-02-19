@@ -1,51 +1,32 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin bulk upload: require category selection and send to backend",
+  "title": "Set category-based pricing: 3D ocarinas to $9, ceramic ocarinas to $19",
   "requirements": [
     {
-      "id": "REQ-43",
-      "summary": "Add a required category selector to the Admin Bulk Photo Upload page with exactly two options (\"3D printed\", \"Ceramic\").",
+      "id": "REQ-3",
+      "summary": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
       "acceptanceCriteria": [
-        "Admin Bulk Photo Upload page shows a clearly labeled category control before upload starts.",
-        "Category selection is required; attempting to upload without selecting a category shows a clear English error message and does not start uploading.",
-        "The only selectable values are \"3D printed\" and \"Ceramic\" (spelled exactly as shown)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "operation": "modify",
-          "description": "Add a clearly labeled, required category control (two choices only: \"3D printed\" and \"Ceramic\") that must be selected before starting upload; validate on upload click and show an English error (e.g., toast + inline hint) if missing."
-        },
-        {
-          "path": "frontend/src/utils/itemCategory.ts",
-          "operation": "create",
-          "description": "Introduce shared frontend constants/helpers for the two allowed category UI labels (\"3D printed\", \"Ceramic\") and mapping to backend ItemCategory enum values to prevent typos and enforce the two-option constraint."
-        }
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "summary": "Send the selected category with each created item during admin bulk upload and show clear errors if the backend rejects missing/unknown categories.",
-      "acceptanceCriteria": [
-        "Bulk upload request includes the selected category for the items being created.",
-        "If the backend rejects an unknown/missing category, the UI shows a clear English error message and keeps the admin on the upload page."
+        "Admin panel includes a section for setting prices by category",
+        "Admins can select a category and specify a new price",
+        "Price changes apply to all items in the selected category",
+        "UI shows confirmation of how many items were updated"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the bulk upload React Query mutation to accept a required selected category and include it with each item creation payload sent to the backend (use the backend ItemCategory enum); ensure backend errors for missing/unknown categories surface as readable English errors for the page to display."
+          "description": "Add a react-query mutation hook `useUpdateCategoryPrice` that calls a new backend method to bulk update prices by category. The hook should accept category (ItemCategory) and priceInCents (number) as parameters, return the count of updated items, and invalidate the items query cache on success."
         },
         {
-          "path": "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "operation": "modify",
-          "description": "Wire the selected category into the bulk upload mutation call so every uploaded item is created with that category; on backend rejection, show a clear English error message and do not navigate away from the upload page."
+          "path": "frontend/src/components/CategoryPriceEditor.tsx",
+          "operation": "create",
+          "description": "Create a component that displays a form for bulk category price updates. Include a dropdown to select ItemCategory (using itemCategory.ts helpers), a price input field in AUD (converting to cents), a save button, loading state during mutation, and success feedback showing how many items were updated. Use the useUpdateCategoryPrice hook and display validation errors if price is invalid."
         },
         {
-          "path": "frontend/src/utils/itemCategory.ts",
+          "path": "frontend/src/pages/AdminPanelPage.tsx",
           "operation": "modify",
-          "description": "Use the shared category mapping when building the bulk upload payload to guarantee only the two supported categories are sent."
+          "description": "Add the CategoryPriceEditor component to the admin panel page in a dedicated section titled 'Bulk Pricing by Category'. Position it below the Stripe configuration section and above the bulk description update section. Ensure it is only visible to admin users."
         }
       ]
     }

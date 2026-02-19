@@ -153,6 +153,8 @@ export interface backendInterface {
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
     unpublishItems(itemIds: Array<Uint8Array>): Promise<void>;
+    updateAllItemPricesByCategory(): Promise<void>;
+    updateAllPrintedItemDescriptions(newDescription: string): Promise<void>;
     updateItemDescription(itemId: Uint8Array, newDescription: string): Promise<void>;
     updateItemPhoto(itemId: Uint8Array, newPhoto: ExternalBlob, newContentType: string): Promise<void>;
 }

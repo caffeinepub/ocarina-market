@@ -1,289 +1,19 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "Simple storefront for selling ocarinas with an admin panel (including Stripe setup), bulk photo upload that auto-creates one product per photo (title 'ocarina' + auto-generated description), and public guest purchasing via Stripe checkout/payment support.",
+  "projectStateVersion": 3,
+  "summary": "An e-commerce application for selling ocarinas with multiple product categories and customizable pricing",
   "architectural_notes": [
-    "Include an admin panel that supports Stripe setup/configuration; storefront is publicly accessible for guest purchases.",
-    "Add an admin-accessible app configuration section for managing storefront branding settings.",
-    "Support additional media types in branding settings (images plus 3D model files like 3MF/OBJ) and define how they are stored and rendered publicly.",
-    "Stripe payments are configured to use AUD as the storefront currency.",
-    "Decide whether newly created items should default to published/live immediately after upload (auto-publish) vs requiring an explicit admin publish step.",
-    "Introduce an item/category field (initial allowed values: '3D printed' and 'ceramic') and ensure bulk upload sets it for each created item; decide whether/how the storefront can filter or display the category."
+    "Product catalog supports multiple categories and subcategories",
+    "Pricing is category-based with different price points per product type"
   ],
-  "known_issues": [
-    "Image uploads report success but the uploaded images are not actually appearing/stored in the store."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-an-admin-only-bulk-photo-upload-flow-that-accepts-multiple-images-in-one-action-and-creates-exactly-one-store-item-per-uploaded-photo",
-      "title": "Add an admin-only bulk photo upload flow that accepts multiple images in one action and creates exactly one store item per uploaded photo.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-when-creating-a-store-item-from-an-uploaded-photo-set-the-item-title-to-exactly-ocarina-and-generate-a-non-empty-english-description-automatically-without-using-any-external-ai-llm-service",
-      "title": "When creating a store item from an uploaded photo, set the item title to exactly \"ocarina\" and generate a non-empty English description automatically without using any external AI/LLM service.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-store-uploaded-photos-in-the-app-so-they-can-be-displayed-in-the-storefront-list-and-detail-views-including-basic-metadata-needed-to-render-content-type-and-a-stable-identifier-per-image",
-      "title": "Store uploaded photos in the app so they can be displayed in the storefront (list and detail views), including basic metadata needed to render (content type) and a stable identifier per image.",
+      "id": "feature-create-an-admin-interface-that-allows-bulk-price-updates-by-category-enabling-future-price-changes-without-code-modifications",
+      "title": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-build-a-simple-public-storefront-ui-that-lists-all-items-and-supports-viewing-an-individual-item-page-with-its-photo-title-description-and-price",
-      "title": "Build a simple public storefront UI that lists all items and supports viewing an individual item page with its photo, title, description, and price.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-pricing-fields-for-items-and-allow-the-admin-to-set-or-edit-the-price-for-each-item-in-a-single-chosen-currency-so-customers-can-purchase-items",
-      "title": "Add pricing fields for items and allow the admin to set or edit the price for each item (in a single chosen currency) so customers can purchase items.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-integrate-stripe-payments-using-a-secure-checkout-flow-that-enables-customers-to-buy-an-item-from-the-storefront-including-a-success-and-cancel-return-experience",
-      "title": "Integrate Stripe payments using a secure checkout flow that enables customers to buy an item from the storefront, including a success and cancel return experience.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-basic-inventory-protection-to-prevent-double-selling-a-single-unique-item-each-item-created-from-a-photo-is-treated-as-a-single-quantity-product-by-marking-an-item-as-sold-after-successful-payment-confirmation-within-the-app-s-supported-constraints",
-      "title": "Implement basic inventory protection to prevent double-selling a single unique item (each item created from a photo is treated as a single-quantity product) by marking an item as sold after successful payment confirmation within the app’s supported constraints.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-a-cohesive-folk-market-handmade-ceramics-visual-theme-earthy-warm-palette-tactile-typography-card-based-product-grid-consistently-across-pages-without-using-blue-purple-as-the-primary-color-scheme",
-      "title": "Apply a cohesive “folk market / handmade ceramics” visual theme (earthy, warm palette; tactile typography; card-based product grid) consistently across pages without using blue/purple as the primary color scheme.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-login-requirement-for-purchasing-so-that-a-user-can-start-a-stripe-checkout-session-and-complete-a-purchase-without-authenticating-with-internet-identity",
-      "title": "Remove the login requirement for purchasing so that a user can start a Stripe Checkout session and complete a purchase without authenticating with Internet Identity.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-item-detail-purchase-ui-to-reflect-guest-checkout-do-not-prompt-users-to-log-in-during-checkout-and-present-a-buy-now-call-to-action-when-the-item-is-purchasable-regardless-of-authentication-state",
-      "title": "Update the item detail purchase UI to reflect guest checkout: do not prompt users to log in during checkout, and present a “Buy Now” call-to-action when the item is purchasable regardless of authentication state.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-post-checkout-return-flow-works-for-guest-users-success-and-cancel-pages-without-requiring-an-authenticated-identity",
-      "title": "Ensure the post-checkout return flow works for guest users (success and cancel pages) without requiring an authenticated identity.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-react-query-hooks-to-fetch-and-update-the-branding-configuration-and-ensure-relevant-cached-queries-are-invalidated-refreshed-after-updates",
-      "title": "Add React Query hooks to fetch and update the branding configuration, and ensure relevant cached queries are invalidated/refreshed after updates.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-admin-ui-screen-for-editing-branding-settings-store-name-and-storefront-hero-content-plus-logo-hero-image-path-fields-and-link-to-it-from-the-admin-panel",
-      "title": "Create an admin UI screen for editing branding settings (store name and storefront hero content, plus logo/hero image path fields) and link to it from the Admin Panel.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-the-branding-configuration-across-the-storefront-ui-by-replacing-hard-coded-branding-strings-assets-in-the-header-and-storefront-hero-with-values-from-the-branding-configuration-with-fallbacks",
-      "title": "Apply the branding configuration across the storefront UI by replacing hard-coded branding strings/assets in the header and storefront hero with values from the branding configuration (with fallbacks).",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-react-query-mutation-hooks-for-admin-item-editing-update-item-description-and-replace-item-photo-and-ensure-relevant-cached-queries-are-invalidated-refreshed-after-updates",
-      "title": "Add React Query mutation hooks for admin item editing: update item description and replace item photo, and ensure relevant cached queries are invalidated/refreshed after updates.",
-      "reqIds": [
-        "REQ-19"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-admin-ui-so-an-admin-can-edit-an-item-s-description-and-replace-its-image-from-the-item-detail-page",
-      "title": "Update the admin UI so an admin can edit an item’s description and replace its image from the item detail page.",
-      "reqIds": [
-        "REQ-20"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-guest-basket-cart-feature-that-lets-users-add-multiple-storefront-items-to-a-basket-and-review-remove-items-before-checkout",
-      "title": "Add a guest basket/cart feature that lets users add multiple storefront items to a basket and review/remove items before checkout.",
-      "reqIds": [
-        "REQ-21"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-dedicated-basket-page-route-e-g-basket-or-cart-and-a-header-entry-point-that-shows-the-current-basket-item-count-for-guests-and-authenticated-users",
-      "title": "Add a dedicated Basket page/route (e.g., \"/basket\" or \"/cart\") and a header entry point that shows the current basket item count for guests and authenticated users.",
-      "reqIds": [
-        "REQ-22"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-stripe-checkout-from-the-basket-for-multiple-items-in-a-single-checkout-session-using-the-existing-stripe-checkout-flow-success-and-cancel-return-pages",
-      "title": "Implement Stripe checkout from the basket for multiple items in a single checkout session, using the existing Stripe checkout flow (success and cancel return pages).",
-      "reqIds": [
-        "REQ-23"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-keep-the-storefront-purchase-ux-limited-to-buying-a-single-item-directly-from-an-item-detail-page-i-e-the-existing-buy-now-flow-remains-single-item-while-basket-checkout-is-the-only-multi-item-purchase-flow",
-      "title": "Keep the storefront purchase UX limited to buying a single item directly from an item detail page (i.e., the existing \"Buy Now\" flow remains single-item), while basket checkout is the only multi-item purchase flow.",
-      "reqIds": [
-        "REQ-25"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-explicit-live-published-status-to-store-items-so-the-storefront-only-shows-items-that-are-published-live-while-admins-can-still-view-and-manage-unpublished-items",
-      "title": "Add an explicit “live/published” status to store items so the storefront only shows items that are published (live), while admins can still view and manage unpublished items.",
-      "reqIds": [
-        "REQ-26"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-admin-branding-settings-screen-to-allow-admins-to-upload-branding-media-from-their-computer-not-just-paste-a-url-accepting-images-and-3d-model-files-in-3mf-and-obj-formats-and-save-the-uploaded-media-into-branding",
-      "title": "Update the Admin Branding Settings screen to allow admins to upload branding media from their computer (not just paste a URL), accepting images and 3D model files in .3mf and .obj formats, and save the uploaded media into branding.",
-      "reqIds": [
-        "REQ-28"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-render-the-storefront-hero-using-branding-media-show-an-image-hero-background-when-the-branding-media-is-an-image-and-show-an-embedded-3d-viewer-when-the-branding-media-is-a-3d-model-3mf-or-obj",
-      "title": "Render the storefront hero using branding media: show an image hero background when the branding media is an image, and show an embedded 3D viewer when the branding media is a 3D model (.3mf or .obj).",
-      "reqIds": [
-        "REQ-29"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-item-publishing-live-store-workflow-is-available-in-the-admin-ui-in-a-way-that-is-consistent-with-existing-admin-item-editing-patterns-description-photo-edit-price-edit-including-clear-english-labels-and-safe-defaults",
-      "title": "Ensure the item publishing (“live store”) workflow is available in the admin UI in a way that is consistent with existing admin item editing patterns (description/photo edit + price edit), including clear English labels and safe defaults.",
-      "reqIds": [
-        "REQ-30"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-branding-configuration-to-include-editable-storefront-hero-text-title-and-subtitle-and-expose-it-publicly-so-the-storefront-hero-no-longer-uses-hard-coded-strings",
-      "title": "Update the Branding configuration to include editable storefront hero text (title and subtitle) and expose it publicly so the storefront hero no longer uses hard-coded strings.",
-      "reqIds": [
-        "REQ-31"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-admin-friendly-logo-image-upload-control-in-branding-settings-that-uploads-an-image-file-and-saves-it-as-the-branding-logo-not-only-via-a-pasted-url-path",
-      "title": "Add an admin-friendly logo image upload control in Branding Settings that uploads an image file and saves it as the branding logo (not only via a pasted URL/path).",
-      "reqIds": [
-        "REQ-32"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-editable-inputs-for-the-storefront-hero-title-and-subtitle-on-the-admin-branding-settings-page-and-persist-them-via-the-existing-branding-save-flow",
-      "title": "Add editable inputs for the storefront hero title and subtitle on the Admin Branding Settings page and persist them via the existing branding save flow.",
-      "reqIds": [
-        "REQ-33"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-hard-coded-hero-title-subtitle-in-the-storefront-hero-component-with-values-from-the-backend-branding-configuration-with-fallbacks",
-      "title": "Replace the hard-coded hero title/subtitle in the storefront hero component with values from the backend branding configuration (with fallbacks).",
-      "reqIds": [
-        "REQ-34"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-admin-bulk-photo-upload-ui-to-only-display-successfully-uploaded-after-verifying-that-the-backend-returned-created-item-ids-and-that-the-items-can-be-fetched-afterward-otherwise-show-a-clear-english-error-message-and-keep-the-user-on-the-upload-page",
-      "title": "Update the Admin Bulk Photo Upload UI to only display “Successfully uploaded” after verifying that the backend returned created item IDs and that the items can be fetched afterward; otherwise show a clear English error message and keep the user on the upload page.",
-      "reqIds": [
-        "REQ-37"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-storefront-only-shows-items-that-are-published-but-make-the-post-upload-experience-explicitly-communicate-why-newly-uploaded-items-may-not-appear-on-the-public-storefront-and-guide-the-admin-to-publish-them",
-      "title": "Ensure the storefront only shows items that are published, but make the post-upload experience explicitly communicate why newly uploaded items may not appear on the public storefront and guide the admin to publish them.",
-      "reqIds": [
-        "REQ-39"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-improve-frontend-diagnostics-for-missing-broken-item-images-so-admins-can-distinguish-between-a-an-unpublished-item-not-appearing-on-the-storefront-and-b-an-item-image-failing-to-load-due-to-a-broken-blob-url",
-      "title": "Improve frontend diagnostics for missing/broken item images so admins can distinguish between (a) an unpublished item not appearing on the storefront and (b) an item image failing to load due to a broken blob URL.",
-      "reqIds": [
-        "REQ-40"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-admin-bulk-upload-success-ui-to-reflect-that-newly-uploaded-items-are-already-published-not-unpublished-drafts-using-clear-english-messaging-and-provide-a-direct-navigation-option-to-the-public-storefront-after-upload",
-      "title": "Update the Admin Bulk Upload success UI to reflect that newly uploaded items are already published (not unpublished drafts), using clear English messaging, and provide a direct navigation option to the public storefront after upload.",
-      "reqIds": [
-        "REQ-42"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-required-category-selector-to-the-admin-bulk-photo-upload-page-so-an-admin-can-choose-the-category-for-the-items-being-created-with-exactly-two-options-3d-printed-and-ceramic",
-      "title": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
-      "reqIds": [
-        "REQ-43"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-frontend-bulk-upload-mutation-to-send-the-selected-category-along-with-each-uploaded-image-so-the-backend-can-tag-newly-created-items-appropriately",
-      "title": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
-      "reqIds": [
-        "REQ-45"
       ],
       "version": 1
     }
@@ -291,186 +21,46 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Bulk upload multiple photos and create one store item per photo",
+      "summary": "Set 3D ocarinas to $9 and ceramic ocarinas to $19",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Auto-generate product description for each created item and set default title to 'ocarina'",
+      "summary": "Enable adding products to custom subcategories during upload",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Integrate Stripe payments with full checkout flow for storefront purchases",
+      "summary": "Make product names editable and reflect their category names",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-4",
-      "summary": "Build a simple storefront to list items and allow customers to purchase",
+      "summary": "Allow editing price and name for individual items",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-5",
-      "summary": "Add admin app configuration/settings for branding (e.g., storefront branding options)",
-      "reqIds": [],
+      "summary": "Update all items in the '3D Printed' category to have a price of $9.00 (900 cents)",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     },
     {
       "id": "AR-6",
-      "summary": "Add a persistent app branding configuration in the backend that can be read publicly and updated by admins only.",
+      "summary": "Update all items in the 'Ceramic' category to have a price of $19.00 (1900 cents)",
       "reqIds": [
-        "REQ-12"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Ensure each uploaded image results in a different (unique) auto-generated product description per item",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Allow admins to edit an existing item’s images and description after creation",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "Change the automatic item description generation so that each newly created item (each uploaded image in bulk upload) receives a different, non-empty English description (i.e., descriptions should not all be the same constant string).",
-      "reqIds": [
-        "REQ-16"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Add admin-only backend operations to edit an existing item’s description after creation.",
-      "reqIds": [
-        "REQ-17"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-11",
-      "summary": "Add admin-only backend operations to replace an existing item’s image (photo) and `contentType` after creation, without changing the item’s stable `id` used in item URLs.",
-      "reqIds": [
-        "REQ-18"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "Add a guest basket/cart and support Stripe checkout for multiple items (while optionally keeping storefront purchase flow limited to buying one item at a time)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-16",
-      "summary": "Ensure inventory protection (marking items as sold after confirmed payment) works for multi-item basket checkout, not only single-item checkout.",
-      "reqIds": [
-        "REQ-24"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Add per-item size selection with three variants (Small $9, Medium $11, Large $15) and allow admin to update variant pricing",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "Allow uploading images or 3D models (3MF/OBJ) via branding settings for display on the storefront (e.g., hero/branding media)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-20",
-      "summary": "Extend the backend branding configuration to support a single hero “branding media” asset that can be either an image or a 3D model, with enough metadata to render it correctly (at minimum: blob reference + content type and/or media kind).",
-      "reqIds": [
-        "REQ-27"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-21",
-      "summary": "Allow admins to upload a logo image in Branding Settings (store logo asset upload, not just URL/path) and have it render in the storefront header",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-22",
-      "summary": "Allow admins to edit the storefront hero text/tagline (e.g., 'Handcrafted ocarinas… Discover unique…') via Branding Settings",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-23",
-      "summary": "Fix the backend bulk photo upload + item creation flow so that uploaded image bytes are actually persisted in blob storage and the created Item records reference a retrievable photo blob that can be rendered later in the storefront/admin UI.",
-      "reqIds": [
-        "REQ-35"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-24",
-      "summary": "Fix the backend single-item image replacement flow (admin ‘Replace Item Image’) so that the new image bytes are persisted and the item’s updated photo renders correctly after the mutation.",
-      "reqIds": [
-        "REQ-36"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-25",
-      "summary": "Fix the backend image/blob persistence so that photos uploaded via bulk upload and via the admin “Replace Item Image” flow are actually stored in blob storage and remain retrievable later via the stored ExternalBlob reference.",
-      "reqIds": [
-        "REQ-38"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-26",
-      "summary": "Automatically publish items (set live/published=true) immediately after successful image upload/item creation so new uploads appear on the public storefront without manual publish step",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-27",
-      "summary": "Automatically publish each newly created store item (set `published = true`) when an admin uploads photos via the bulk upload flow, so the items appear on the public storefront immediately after a successful upload.",
-      "reqIds": [
-        "REQ-41"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-28",
-      "summary": "Add category selection on the admin bulk upload page so each new item is tagged as either '3D printed' or 'ceramic'",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-30",
-      "summary": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\").",
-      "reqIds": [
-        "REQ-44"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-32",
-      "summary": "Add a conditional backend state migration to support upgrading existing stored items when introducing the new category field, assigning a safe default category to all existing items.",
-      "reqIds": [
-        "REQ-46"
+        "REQ-2"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Ocarina Market",
+  "projectName": "Ocarina Store",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

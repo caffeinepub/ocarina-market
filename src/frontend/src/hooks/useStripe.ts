@@ -54,27 +54,22 @@ export function useCreateCheckoutSession() {
       cancelUrl: string;
     }): Promise<CheckoutSession> => {
       if (!actor) throw new Error('Actor not available');
-      
-      try {
-        const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
-        
-        // Validate result is a string before parsing
-        if (typeof result !== 'string') {
-          throw new Error('Invalid response from backend: expected JSON string');
-        }
-        
-        const session = JSON.parse(result) as CheckoutSession;
-        
-        if (!session?.url || typeof session.url !== 'string' || session.url.trim() === '') {
-          throw new Error('Stripe session missing valid url');
-        }
-        
-        return session;
-      } catch (error) {
-        console.error('Checkout session creation error:', error);
-        throw error;
+
+      // Validate all items have 'aud' currency
+      const invalidItems = items.filter(item => item.currency !== 'aud');
+      if (invalidItems.length > 0) {
+        throw new Error('All items must use AUD currency');
       }
-    },
+
+      const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
+      const session = JSON.parse(result) as CheckoutSession;
+      
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
+      }
+      
+      return session;
+    }
   });
 }
 
@@ -90,45 +85,26 @@ export function useCreateCheckoutSessionFromBasket() {
       cancelUrl: string;
     }): Promise<CheckoutSession> => {
       if (!actor) throw new Error('Actor not available');
+
+      const result = await actor.createCheckoutSessionFromBasket(successUrl, cancelUrl);
+      const session = JSON.parse(result) as CheckoutSession;
       
-      try {
-        const result = await actor.createCheckoutSessionFromBasket(successUrl, cancelUrl);
-        
-        // Validate result is a string before parsing
-        if (typeof result !== 'string') {
-          throw new Error('Invalid response from backend: expected JSON string');
-        }
-        
-        const session = JSON.parse(result) as CheckoutSession;
-        
-        if (!session?.url || typeof session.url !== 'string' || session.url.trim() === '') {
-          throw new Error('Stripe session missing valid url');
-        }
-        
-        return session;
-      } catch (error) {
-        console.error('Basket checkout session creation error:', error);
-        throw error;
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
       }
-    },
+      
+      return session;
+    }
   });
 }
 
-export function useGetStripeSessionStatus(sessionId: string | null) {
-  const { actor, isFetching } = useActor();
+export function useGetStripeSessionStatus() {
+  const { actor } = useActor();
 
-  return useQuery<StripeSessionStatus | null>({
-    queryKey: ['stripeSessionStatus', sessionId],
-    queryFn: async () => {
-      if (!actor || !sessionId) return null;
-      try {
-        return await actor.getStripeSessionStatus(sessionId);
-      } catch (error) {
-        console.error('Error fetching Stripe session status:', error);
-        return null;
-      }
-    },
-    enabled: !!actor && !isFetching && !!sessionId,
-    retry: false,
+  return useMutation({
+    mutationFn: async (sessionId: string): Promise<StripeSessionStatus> => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getStripeSessionStatus(sessionId);
+    }
   });
 }

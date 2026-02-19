@@ -2,35 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-required-category-selector-to-the-admin-bulk-photo-upload-page-so-an-admin-can-choose-the-category-for-the-items-being-created-with-exactly-two-options-3d-printed-and-ceramic",
-      "featureTitle": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
+      "featureId": "feature-create-an-admin-interface-that-allows-bulk-price-updates-by-category-enabling-future-price-changes-without-code-modifications",
+      "featureTitle": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
       "files": [
-        "frontend/src/pages/AdminBulkUploadPage.tsx",
-        "frontend/src/utils/itemCategory.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-43"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-frontend-bulk-upload-mutation-to-send-the-selected-category-along-with-each-uploaded-image-so-the-backend-can-tag-newly-created-items-appropriately",
-      "featureTitle": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
-      "files": [
+        "frontend/src/components/CategoryPriceEditor.tsx",
         "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/AdminBulkUploadPage.tsx",
-        "frontend/src/utils/itemCategory.ts"
+        "frontend/src/pages/AdminPanelPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -44,7 +21,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-45"
+        "REQ-3"
       ],
       "confidence": "high"
     }

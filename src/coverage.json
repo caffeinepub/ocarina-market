@@ -1,56 +1,43 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T09:09:51.996Z",
+  "generatedAt": "2026-02-19T07:00:31.206Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-43",
-        "summary": "Add a required category selector to the Admin Bulk Photo Upload page so an admin can choose the category for the items being created, with exactly two options: \"3D printed\" and \"Ceramic\".",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "frontend/src/utils/itemCategory.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "frontend/src/utils/itemCategory.ts"
-        ]
-      },
-      {
-        "id": "REQ-44",
-        "summary": "Persist a per-item category in the backend item model and set it during bulk upload item creation based on the admin’s selected category (\"3D printed\" or \"Ceramic\").",
+        "id": "REQ-1",
+        "summary": "Update all items in the '3D Printed' category to have a price of $9.00 (900 cents)",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-45",
-        "summary": "Update the frontend bulk upload mutation to send the selected category along with each uploaded image so the backend can tag newly created items appropriately.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "frontend/src/utils/itemCategory.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/AdminBulkUploadPage.tsx",
-          "frontend/src/utils/itemCategory.ts"
-        ]
-      },
-      {
-        "id": "REQ-46",
-        "summary": "Add a conditional backend state migration to support upgrading existing stored items when introducing the new category field, assigning a safe default category to all existing items.",
+        "id": "REQ-2",
+        "summary": "Update all items in the 'Ceramic' category to have a price of $19.00 (1900 cents)",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/CategoryPriceEditor.tsx",
+          "frontend/src/pages/AdminPanelPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/CategoryPriceEditor.tsx",
+          "frontend/src/pages/AdminPanelPage.tsx"
+        ]
       }
     ]
   },
@@ -58,16 +45,17 @@
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/CategoryPriceEditor.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminBulkUploadPage.tsx",
-    "frontend/src/utils/itemCategory.ts",
+    "frontend/src/pages/AdminPanelPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

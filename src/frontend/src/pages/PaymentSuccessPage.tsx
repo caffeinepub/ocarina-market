@@ -1,21 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useGetStripeSessionStatus } from '../hooks/useStripe';
 import { useBasket } from '../hooks/useBasket';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { StripeSessionStatus } from '../backend';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { clearBasket } = useBasket();
+  const [sessionStatus, setSessionStatus] = useState<StripeSessionStatus | null>(null);
 
   // Extract session_id from URL
   const urlParams = new URLSearchParams(window.location.search);
   const sessionId = urlParams.get('session_id');
 
-  const { data: sessionStatus, isLoading, isError } = useGetStripeSessionStatus(sessionId);
+  const getSessionStatus = useGetStripeSessionStatus();
 
   useEffect(() => {
     // Invalidate items to refresh sold status regardless of session status
@@ -25,7 +27,19 @@ export default function PaymentSuccessPage() {
     
     // Clear basket on successful payment
     clearBasket();
-  }, [queryClient, clearBasket]);
+
+    // Fetch session status if sessionId is available
+    if (sessionId) {
+      getSessionStatus.mutateAsync(sessionId)
+        .then(status => setSessionStatus(status))
+        .catch(error => {
+          console.error('Failed to fetch session status:', error);
+        });
+    }
+  }, [sessionId, queryClient, clearBasket]);
+
+  const isLoading = getSessionStatus.isPending;
+  const isError = getSessionStatus.isError;
 
   return (
     <div className="container mx-auto px-4 py-12">

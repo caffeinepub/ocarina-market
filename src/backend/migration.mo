@@ -1,92 +1,44 @@
 import Map "mo:core/Map";
-import Principal "mo:core/Principal";
-import Storage "blob-storage/Storage";
-import Stripe "stripe/stripe";
 import Blob "mo:core/Blob";
+import Stripe "stripe/stripe";
+import AccessControl "authorization/access-control";
+import Principal "mo:core/Principal";
 
 module {
-  type OldItem = {
+  type ItemCategory = { #printed; #ceramic };
+
+  type Item = {
     id : Blob;
-    photo : Storage.ExternalBlob;
-    title : Text;
     contentType : Text;
     description : Text;
+    photo : Blob;
     priceInCents : Nat;
-    sold : Bool;
     published : Bool;
+    sold : Bool;
+    title : Text;
+    category : ItemCategory;
     createdBy : Principal;
-  };
-
-  type OldBranding = {
-    appName : Text;
-    logo : Storage.ExternalBlob;
-    heroMedia : {
-      blob : Storage.ExternalBlob;
-      mediaKind : {
-        #image;
-        #model3d : { modelType : Text };
-      };
-      contentType : Text;
-    };
-    storefrontHeroText : {
-      #default;
-      #custom : { title : Text; subtitle : Text };
-    };
   };
 
   type OldActor = {
-    items : Map.Map<Blob, OldItem>;
-    userProfiles : Map.Map<Principal, { name : Text }>;
+    items : Map.Map<Blob, Item>;
     stripeConfig : ?Stripe.StripeConfiguration;
-    branding : ?OldBranding;
-    baskets : Map.Map<Principal, [Blob]>;
-  };
-
-  type NewItem = {
-    id : Blob;
-    photo : Storage.ExternalBlob;
-    title : Text;
-    contentType : Text;
-    description : Text;
-    priceInCents : Nat;
-    sold : Bool;
-    published : Bool;
-    createdBy : Principal;
-    category : {
-      #printed;
-      #ceramic;
-    };
-  };
-
-  type NewBranding = {
-    appName : Text;
-    logo : Storage.ExternalBlob;
-    heroMedia : {
-      blob : Storage.ExternalBlob;
-      mediaKind : {
-        #image;
-        #model3d : { modelType : Text };
-      };
-      contentType : Text;
-    };
-    storefrontHeroText : {
-      #default;
-      #custom : { title : Text; subtitle : Text };
-    };
+    accessControlState : AccessControl.AccessControlState;
   };
 
   type NewActor = {
-    items : Map.Map<Blob, NewItem>;
-    userProfiles : Map.Map<Principal, { name : Text }>;
+    items : Map.Map<Blob, Item>;
     stripeConfig : ?Stripe.StripeConfiguration;
-    branding : ?NewBranding;
-    baskets : Map.Map<Principal, [Blob]>;
+    accessControlState : AccessControl.AccessControlState;
   };
 
   public func run(old : OldActor) : NewActor {
-    let newItems = old.items.map<Blob, OldItem, NewItem>(
+    let newItems = old.items.map<Blob, Item, Item>(
       func(_id, item) {
-        { item with category = #printed };
+        switch (item.category) {
+          case (#printed) { { item with priceInCents = 900 } };
+          case (#ceramic) { { item with priceInCents = 1900 } };
+        };
       }
     );
     { old with items = newItems };

@@ -150,6 +150,8 @@ export interface _SERVICE {
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
   'unpublishItems' : ActorMethod<[Array<Uint8Array>], undefined>,
+  'updateAllItemPricesByCategory' : ActorMethod<[], undefined>,
+  'updateAllPrintedItemDescriptions' : ActorMethod<[string], undefined>,
   'updateItemDescription' : ActorMethod<[Uint8Array, string], undefined>,
   'updateItemPhoto' : ActorMethod<
     [Uint8Array, ExternalBlob, string],

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from '@tanstack/react-router';
 import { encodeItemId } from '../lib/idEncoding';
 import { useState } from 'react';
+import { formatAudFromCents } from '../utils/currency';
 
 interface ItemCardProps {
   item: Item;
@@ -18,7 +19,7 @@ export default function ItemCard({ item }: ItemCardProps) {
     : item.photo.getDirectURL();
 
   const formattedPrice = item.priceInCents > 0 
-    ? `$${(Number(item.priceInCents) / 100).toFixed(2)}`
+    ? formatAudFromCents(item.priceInCents)
     : 'Price not set';
 
   const handleClick = () => {

@@ -246,6 +246,8 @@ export interface backendInterface {
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
     unpublishItems(itemIds: Array<Uint8Array>): Promise<void>;
+    updateAllItemPricesByCategory(): Promise<void>;
+    updateAllPrintedItemDescriptions(newDescription: string): Promise<void>;
     updateItemDescription(itemId: Uint8Array, newDescription: string): Promise<void>;
     updateItemPhoto(itemId: Uint8Array, newPhoto: ExternalBlob, newContentType: string): Promise<void>;
 }
@@ -742,6 +744,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.unpublishItems(arg0);
+            return result;
+        }
+    }
+    async updateAllItemPricesByCategory(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateAllItemPricesByCategory();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateAllItemPricesByCategory();
+            return result;
+        }
+    }
+    async updateAllPrintedItemDescriptions(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateAllPrintedItemDescriptions(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateAllPrintedItemDescriptions(arg0);
             return result;
         }
     }

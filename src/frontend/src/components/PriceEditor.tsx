@@ -38,10 +38,10 @@ export default function PriceEditor({ itemId, currentPriceInCents }: PriceEditor
         Set Item Price
       </h3>
       <div className="space-y-2">
-        <Label htmlFor="price">Price (USD)</Label>
+        <Label htmlFor="price">Price (AUD)</Label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">A$</span>
             <Input
               id="price"
               type="number"
@@ -49,7 +49,7 @@ export default function PriceEditor({ itemId, currentPriceInCents }: PriceEditor
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="pl-7"
+              className="pl-10"
               placeholder="0.00"
             />
           </div>
