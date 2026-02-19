@@ -5,7 +5,7 @@ import StripeSetup from '../components/StripeSetup';
 import CategoryPriceEditor from '../components/CategoryPriceEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, CreditCard, Upload, CheckCircle2, XCircle, Settings, Palette, RefreshCw } from 'lucide-react';
+import { Loader2, CreditCard, Upload, CheckCircle2, XCircle, Settings, Palette, RefreshCw, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
@@ -121,6 +121,28 @@ export default function AdminPanelPage() {
             >
               <Palette className="mr-2 h-4 w-4" />
               Configure Branding
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Shape Categories Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              Shape Subcategories
+            </CardTitle>
+            <CardDescription>
+              Manage shape subcategories for ocarina items
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => navigate({ to: '/admin/shape-categories' })}
+              className="w-full"
+            >
+              <Tag className="mr-2 h-4 w-4" />
+              Manage Shape Subcategories
             </Button>
           </CardContent>
         </Card>

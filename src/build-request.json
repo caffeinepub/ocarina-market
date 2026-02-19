@@ -1,46 +1,45 @@
 {
   "kind": "build_request",
-  "title": "Set category-based pricing: 3D ocarinas to $9, ceramic ocarinas to $19",
-  "projectName": "Ocarina Store",
-  "priority": "normal",
+  "title": "Fix app loading failure after deployment",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update all items in the '3D Printed' category to have a price of $9.00 (900 cents)",
-      "target": "backend",
+      "text": "Diagnose and fix the root cause preventing the application from loading or rendering any content on the webpage",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-last"
         ],
         "quotes": [
-          "3d ocarinas set to 9$"
+          "The app doesnt load anything"
         ]
       },
       "acceptanceCriteria": [
-        "All items with category '3D Printed' display a price of $9.00 on the storefront",
-        "The price change persists across application restarts"
+        "The application loads successfully in the browser",
+        "The storefront page renders with hero section and item grid",
+        "No JavaScript errors appear in the browser console",
+        "Authentication and navigation work properly"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update all items in the 'Ceramic' category to have a price of $19.00 (1900 cents)",
+      "text": "Verify the backend actor is responding correctly to frontend requests and all canister endpoints are accessible",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-last"
-        ],
-        "quotes": [
-          "ceramic ones set to 19"
         ]
       },
       "acceptanceCriteria": [
-        "All items with category 'Ceramic' display a price of $19.00 on the storefront",
-        "The price change persists across application restarts"
+        "Backend canister methods respond to queries",
+        "No runtime errors in backend actor initialization",
+        "CRUD operations for items and categories function correctly"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
+      "text": "Ensure the frontend routing and React component rendering pipeline is functioning after the Version 19 deployment",
       "target": "frontend",
       "source": {
         "messageIds": [
@@ -48,22 +47,23 @@
         ]
       },
       "acceptanceCriteria": [
-        "Admin panel includes a section for setting prices by category",
-        "Admins can select a category and specify a new price",
-        "Price changes apply to all items in the selected category",
-        "UI shows confirmation of how many items were updated"
+        "TanStack Router initializes and renders routes correctly",
+        "React Query provider and hooks work without errors",
+        "All page components mount and display content",
+        "Internet Identity authentication flow is operational"
       ]
     }
   ],
   "constraints": [
-    "Preserve the existing ItemCategory enum structure in backend/main.mo",
-    "Do not modify the PriceEditor component; create a separate bulk pricing interface",
-    "Maintain the single-actor architecture with all logic in backend/main.mo"
+    "Preserve all existing functionality from Version 19",
+    "Do not modify the single-actor backend architecture",
+    "Maintain compatibility with deployed Stripe integration",
+    "Keep existing shape category system and admin features intact"
   ],
   "nonGoals": [
-    "Changing individual item prices beyond the category-based update",
-    "Modifying the category structure or adding new categories",
-    "Implementing per-item price overrides that ignore category defaults"
+    "Adding new features or functionality",
+    "Redesigning the UI or user experience",
+    "Changing the technology stack or dependencies"
   ],
   "imageRequirements": {
     "required": [],

@@ -38,6 +38,7 @@ export interface BulkItemInput {
     contentType: string;
     description?: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
 }
 export interface http_header {
@@ -65,6 +66,7 @@ export interface Item {
     sold: boolean;
     description: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
     priceInCents: bigint;
 }
@@ -122,6 +124,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addShapeCategory(category: string): Promise<void>;
     addToBasket(itemId: Uint8Array): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bulkUploadItems(itemsInput: Array<BulkItemInput>): Promise<Array<Uint8Array>>;
@@ -138,6 +141,7 @@ export interface backendInterface {
     getItem(id: Uint8Array): Promise<Item>;
     getItems(): Promise<Array<Item>>;
     getItemsByCategory(category: ItemCategory): Promise<Array<Item>>;
+    getShapeCategories(): Promise<Array<string>>;
     getStorefrontHeroText(): Promise<StorefrontHeroText>;
     getStorefrontItems(): Promise<StorefrontItems | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
@@ -147,6 +151,7 @@ export interface backendInterface {
     markItemsAsSold(itemIds: Array<Uint8Array>): Promise<void>;
     publishItems(itemIds: Array<Uint8Array>): Promise<void>;
     removeFromBasket(itemId: Uint8Array): Promise<void>;
+    renameShapeCategory(oldName: string, newName: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setBranding(brand: Branding): Promise<void>;
     setItemPrice(itemId: Uint8Array, priceInCents: bigint): Promise<void>;

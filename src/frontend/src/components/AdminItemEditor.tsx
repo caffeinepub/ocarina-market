@@ -1,21 +1,24 @@
 import { useState, useRef } from 'react';
-import { useUpdateItemDescription, useUpdateItemPhoto } from '../hooks/useQueries';
+import { useUpdateItemDescription, useUpdateItemPhoto, useGetShapeCategories } from '../hooks/useQueries';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Edit, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AdminItemEditorProps {
   itemId: Uint8Array;
   currentDescription: string;
+  currentShapeCategory: string;
   onPhotoUpdateSuccess?: () => void;
 }
 
 export default function AdminItemEditor({ 
   itemId, 
   currentDescription,
+  currentShapeCategory,
   onPhotoUpdateSuccess 
 }: AdminItemEditorProps) {
   const [description, setDescription] = useState(currentDescription);
@@ -24,6 +27,7 @@ export default function AdminItemEditor({
 
   const updateDescription = useUpdateItemDescription();
   const updatePhoto = useUpdateItemPhoto();
+  const { data: shapeCategories, isLoading: categoriesLoading } = useGetShapeCategories();
 
   const handleSaveDescription = async () => {
     if (!description.trim()) {
@@ -77,6 +81,33 @@ export default function AdminItemEditor({
         <Edit className="h-5 w-5" />
         Admin Editor
       </h3>
+
+      {/* Shape Subcategory Display */}
+      <div className="space-y-2">
+        <Label htmlFor="shape-category">Shape Subcategory</Label>
+        {categoriesLoading ? (
+          <div className="flex items-center gap-2 p-2 border border-border rounded-lg bg-muted/30">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm text-muted-foreground">Loading categories...</span>
+          </div>
+        ) : (
+          <Select value={currentShapeCategory} disabled>
+            <SelectTrigger id="shape-category">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {shapeCategories?.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Shape subcategory editing is currently read-only. Use the Shape Categories management page to rename categories.
+        </p>
+      </div>
 
       {/* Description Editor */}
       <div className="space-y-3">

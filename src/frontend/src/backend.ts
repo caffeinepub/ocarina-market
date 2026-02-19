@@ -116,6 +116,7 @@ export interface BulkItemInput {
     contentType: string;
     description?: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
 }
 export interface _CaffeineStorageCreateCertificateResult {
@@ -147,6 +148,7 @@ export interface Item {
     sold: boolean;
     description: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
     priceInCents: bigint;
 }
@@ -215,6 +217,7 @@ export interface backendInterface {
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    addShapeCategory(category: string): Promise<void>;
     addToBasket(itemId: Uint8Array): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bulkUploadItems(itemsInput: Array<BulkItemInput>): Promise<Array<Uint8Array>>;
@@ -231,6 +234,7 @@ export interface backendInterface {
     getItem(id: Uint8Array): Promise<Item>;
     getItems(): Promise<Array<Item>>;
     getItemsByCategory(category: ItemCategory): Promise<Array<Item>>;
+    getShapeCategories(): Promise<Array<string>>;
     getStorefrontHeroText(): Promise<StorefrontHeroText>;
     getStorefrontItems(): Promise<StorefrontItems | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
@@ -240,6 +244,7 @@ export interface backendInterface {
     markItemsAsSold(itemIds: Array<Uint8Array>): Promise<void>;
     publishItems(itemIds: Array<Uint8Array>): Promise<void>;
     removeFromBasket(itemId: Uint8Array): Promise<void>;
+    renameShapeCategory(oldName: string, newName: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setBranding(brand: Branding): Promise<void>;
     setItemPrice(itemId: Uint8Array, priceInCents: bigint): Promise<void>;
@@ -349,6 +354,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async addShapeCategory(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addShapeCategory(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addShapeCategory(arg0);
             return result;
         }
     }
@@ -537,6 +556,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getShapeCategories(): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getShapeCategories();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getShapeCategories();
+            return result;
+        }
+    }
     async getStorefrontHeroText(): Promise<StorefrontHeroText> {
         if (this.processError) {
             try {
@@ -660,6 +693,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.removeFromBasket(arg0);
+            return result;
+        }
+    }
+    async renameShapeCategory(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.renameShapeCategory(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.renameShapeCategory(arg0, arg1);
             return result;
         }
     }
@@ -876,6 +923,7 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
     sold: boolean;
     description: string;
     category: _ItemCategory;
+    shapeCategory: string;
     photo: _ExternalBlob;
     priceInCents: bigint;
 }): Promise<{
@@ -887,6 +935,7 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
     sold: boolean;
     description: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
     priceInCents: bigint;
 }> {
@@ -899,6 +948,7 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
         sold: value.sold,
         description: value.description,
         category: from_candid_ItemCategory_n20(_uploadFile, _downloadFile, value.category),
+        shapeCategory: value.shapeCategory,
         photo: await from_candid_ExternalBlob_n22(_uploadFile, _downloadFile, value.photo),
         priceInCents: value.priceInCents
     };
@@ -1106,12 +1156,14 @@ async function to_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise
     contentType: string;
     description?: string;
     category: ItemCategory;
+    shapeCategory: string;
     photo: ExternalBlob;
 }): Promise<{
     title: string;
     contentType: string;
     description: [] | [string];
     category: _ItemCategory;
+    shapeCategory: string;
     photo: _ExternalBlob;
 }> {
     return {
@@ -1119,6 +1171,7 @@ async function to_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise
         contentType: value.contentType,
         description: value.description ? candid_some(value.description) : candid_none(),
         category: to_candid_ItemCategory_n13(_uploadFile, _downloadFile, value.category),
+        shapeCategory: value.shapeCategory,
         photo: await to_candid_ExternalBlob_n15(_uploadFile, _downloadFile, value.photo)
     };
 }

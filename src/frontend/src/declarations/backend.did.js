@@ -34,6 +34,7 @@ export const BulkItemInput = IDL.Record({
   'contentType' : IDL.Text,
   'description' : IDL.Opt(IDL.Text),
   'category' : ItemCategory,
+  'shapeCategory' : IDL.Text,
   'photo' : ExternalBlob,
 });
 export const ShoppingItem = IDL.Record({
@@ -52,6 +53,7 @@ export const Item = IDL.Record({
   'sold' : IDL.Bool,
   'description' : IDL.Text,
   'category' : ItemCategory,
+  'shapeCategory' : IDL.Text,
   'photo' : ExternalBlob,
   'priceInCents' : IDL.Nat,
 });
@@ -138,6 +140,7 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addShapeCategory' : IDL.Func([IDL.Text], [], []),
   'addToBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'bulkUploadItems' : IDL.Func(
@@ -172,6 +175,7 @@ export const idlService = IDL.Service({
   'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
   'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
   'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
+  'getShapeCategories' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], ['query']),
   'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
@@ -185,6 +189,7 @@ export const idlService = IDL.Service({
   'markItemsAsSold' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
   'publishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
   'removeFromBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+  'renameShapeCategory' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setBranding' : IDL.Func([Branding], [], []),
   'setItemPrice' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Nat], [], []),
@@ -234,6 +239,7 @@ export const idlFactory = ({ IDL }) => {
     'contentType' : IDL.Text,
     'description' : IDL.Opt(IDL.Text),
     'category' : ItemCategory,
+    'shapeCategory' : IDL.Text,
     'photo' : ExternalBlob,
   });
   const ShoppingItem = IDL.Record({
@@ -252,6 +258,7 @@ export const idlFactory = ({ IDL }) => {
     'sold' : IDL.Bool,
     'description' : IDL.Text,
     'category' : ItemCategory,
+    'shapeCategory' : IDL.Text,
     'photo' : ExternalBlob,
     'priceInCents' : IDL.Nat,
   });
@@ -335,6 +342,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addShapeCategory' : IDL.Func([IDL.Text], [], []),
     'addToBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'bulkUploadItems' : IDL.Func(
@@ -369,6 +377,7 @@ export const idlFactory = ({ IDL }) => {
     'getItem' : IDL.Func([IDL.Vec(IDL.Nat8)], [Item], ['query']),
     'getItems' : IDL.Func([], [IDL.Vec(Item)], ['query']),
     'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
+    'getShapeCategories' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'getStorefrontHeroText' : IDL.Func([], [StorefrontHeroText], ['query']),
     'getStorefrontItems' : IDL.Func([], [IDL.Opt(StorefrontItems)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
@@ -382,6 +391,7 @@ export const idlFactory = ({ IDL }) => {
     'markItemsAsSold' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
     'publishItems' : IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [], []),
     'removeFromBasket' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+    'renameShapeCategory' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setBranding' : IDL.Func([Branding], [], []),
     'setItemPrice' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Nat], [], []),

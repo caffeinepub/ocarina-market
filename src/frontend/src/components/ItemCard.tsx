@@ -1,65 +1,52 @@
 import { Item } from '../backend';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from '@tanstack/react-router';
-import { encodeItemId } from '../lib/idEncoding';
-import { useState } from 'react';
 import { formatAudFromCents } from '../utils/currency';
+import { getLabelFromCategory } from '../utils/itemCategory';
+import { getShapeCategoryLabel } from '../utils/shapeCategory';
+import { Tag, Package } from 'lucide-react';
 
 interface ItemCardProps {
   item: Item;
+  onClick?: () => void;
 }
 
-export default function ItemCard({ item }: ItemCardProps) {
-  const navigate = useNavigate();
-  const [imageError, setImageError] = useState(false);
-
-  const imageUrl = imageError 
-    ? '/assets/generated/product-placeholder.dim_800x800.png'
-    : item.photo.getDirectURL();
-
-  const formattedPrice = item.priceInCents > 0 
-    ? formatAudFromCents(item.priceInCents)
-    : 'Price not set';
-
-  const handleClick = () => {
-    const encodedId = encodeItemId(item.id);
-    navigate({ to: '/items/$itemId', params: { itemId: encodedId } });
-  };
+export default function ItemCard({ item, onClick }: ItemCardProps) {
+  const imageUrl = item.photo.getDirectURL();
 
   return (
-    <Card 
-      className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-      onClick={handleClick}
+    <Card
+      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+      onClick={onClick}
     >
       <div className="aspect-square overflow-hidden bg-muted">
         <img
           src={imageUrl}
           alt={item.title}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-          onError={() => setImageError(true)}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            e.currentTarget.src = '/assets/product-placeholder.dim_800x800.png';
+          }}
         />
       </div>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-lg capitalize line-clamp-1">
-            {item.title}
-          </h3>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+            <Tag className="h-3 w-3" />
+            {getShapeCategoryLabel(item.shapeCategory)}
+          </Badge>
+          <Badge variant="outline" className="flex items-center gap-1 text-xs">
+            <Package className="h-3 w-3" />
+            {getLabelFromCategory(item.category)}
+          </Badge>
           {item.sold && (
-            <Badge variant="secondary" className="shrink-0">
-              Sold
-            </Badge>
+            <Badge variant="destructive" className="text-xs">Sold</Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-          {item.description}
-        </p>
+        <h3 className="font-semibold text-lg line-clamp-1">{item.title}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+        <p className="text-xl font-bold text-primary">{formatAudFromCents(Number(item.priceInCents))}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <p className="text-xl font-bold text-primary">
-          {formattedPrice}
-        </p>
-      </CardFooter>
     </Card>
   );
 }

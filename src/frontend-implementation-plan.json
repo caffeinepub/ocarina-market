@@ -1,32 +1,99 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Set category-based pricing: 3D ocarinas to $9, ceramic ocarinas to $19",
+  "title": "Fix app loading failure after deployment",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
+      "id": "REQ-1",
+      "summary": "Diagnose and fix the root cause preventing the application from loading or rendering any content on the webpage",
       "acceptanceCriteria": [
-        "Admin panel includes a section for setting prices by category",
-        "Admins can select a category and specify a new price",
-        "Price changes apply to all items in the selected category",
-        "UI shows confirmation of how many items were updated"
+        "The application loads successfully in the browser",
+        "The storefront page renders with hero section and item grid",
+        "No JavaScript errors appear in the browser console",
+        "Authentication and navigation work properly"
       ],
       "file_operations": [
         {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Add error boundary and console logging to diagnose initialization failures. Verify React Query client configuration and Internet Identity provider setup are correct. Ensure the root element is being properly targeted and the app mounts successfully."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add error handling and fallback UI to the router configuration. Verify TanStack Router initialization is correct and all route paths are properly configured. Add console logging to track router lifecycle and component mounting. Ensure the layout renders even if child routes fail."
+        },
+        {
+          "path": "frontend/src/hooks/useActor.ts",
+          "operation": "modify",
+          "description": "Add error handling and logging for actor initialization failures. Verify the backend actor is being created correctly with the current identity. Add null checks and fallback behavior if actor creation fails. Log canister connection status and any initialization errors."
+        },
+        {
+          "path": "frontend/src/hooks/useInternetIdentity.ts",
+          "operation": "modify",
+          "description": "Add error handling for AuthClient initialization failures. Verify identity persistence and restoration logic. Add logging for authentication state changes. Ensure the provider handles edge cases like missing identity or failed authentication gracefully."
+        },
+        {
+          "path": "frontend/src/pages/StorefrontPage.tsx",
+          "operation": "modify",
+          "description": "Add error boundaries and loading states to prevent rendering failures. Verify data fetching hooks handle null/undefined states gracefully. Add fallback UI for failed branding or item queries. Ensure the hero section and item grid render with placeholder content if backend data is unavailable."
+        },
+        {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Verify the root div element exists and has the correct ID. Add a fallback message that displays if JavaScript fails to load. Check that script tags reference the correct entry point and module type."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Ensure the frontend routing and React component rendering pipeline is functioning after the Version 19 deployment",
+      "acceptanceCriteria": [
+        "TanStack Router initializes and renders routes correctly",
+        "React Query provider and hooks work without errors",
+        "All page components mount and display content",
+        "Internet Identity authentication flow is operational"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Verify all route configurations match the expected paths and components. Add suspense boundaries for lazy-loaded routes. Ensure navigation links in the header and footer work correctly. Test that admin routes are properly guarded and accessible only to authenticated admins."
+        },
+        {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a react-query mutation hook `useUpdateCategoryPrice` that calls a new backend method to bulk update prices by category. The hook should accept category (ItemCategory) and priceInCents (number) as parameters, return the count of updated items, and invalidate the items query cache on success."
+          "description": "Add error handling and retry logic to all query hooks. Verify that queries are properly enabled based on actor availability. Add logging for query failures and ensure failed queries don't crash the app. Check that query keys are consistent and invalidation works correctly."
         },
         {
-          "path": "frontend/src/components/CategoryPriceEditor.tsx",
-          "operation": "create",
-          "description": "Create a component that displays a form for bulk category price updates. Include a dropdown to select ItemCategory (using itemCategory.ts helpers), a price input field in AUD (converting to cents), a save button, loading state during mutation, and success feedback showing how many items were updated. Use the useUpdateCategoryPrice hook and display validation errors if price is invalid."
-        },
-        {
-          "path": "frontend/src/pages/AdminPanelPage.tsx",
+          "path": "frontend/src/components/LoginButton.tsx",
           "operation": "modify",
-          "description": "Add the CategoryPriceEditor component to the admin panel page in a dedicated section titled 'Bulk Pricing by Category'. Position it below the Stripe configuration section and above the bulk description update section. Ensure it is only visible to admin users."
+          "description": "Verify the authentication flow works correctly with Internet Identity. Add error handling for login failures. Ensure logout clears all cached data and resets application state. Test that the dropdown menu displays admin links only when the user has admin privileges."
+        },
+        {
+          "path": "frontend/src/components/ProfileSetupDialog.tsx",
+          "operation": "modify",
+          "description": "Add proper loading state checks to prevent modal flash on page load. Verify the dialog only shows when the user is authenticated, profile loading is complete, and no profile exists. Use the authorization component's usage instructions to verify component behavior before implementing changes."
+        },
+        {
+          "path": "frontend/src/pages/BasketPage.tsx",
+          "operation": "modify",
+          "description": "Verify basket state persistence and restoration from localStorage. Add error handling for failed item fetches. Ensure checkout flow validates Stripe configuration before redirecting. Test that sold items are filtered out before checkout."
+        },
+        {
+          "path": "frontend/src/pages/ItemDetailPage.tsx",
+          "operation": "modify",
+          "description": "Add error handling for missing or invalid item IDs. Verify image rendering and fallback behavior. Ensure add-to-basket and buy-now buttons work correctly. Test that admin controls only display for authenticated admins."
+        },
+        {
+          "path": "frontend/src/pages/PaymentSuccessPage.tsx",
+          "operation": "modify",
+          "description": "Verify the page correctly fetches Stripe session status and handles both success and error states. Ensure basket clearing and query invalidation work properly after successful payment. Add error handling for failed session status fetches."
+        },
+        {
+          "path": "frontend/src/pages/PaymentFailurePage.tsx",
+          "operation": "modify",
+          "description": "Verify the page renders correctly and provides clear navigation options back to the storefront or basket. Ensure no errors occur during page load."
         }
       ]
     }

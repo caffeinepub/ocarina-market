@@ -26,6 +26,7 @@ export interface BulkItemInput {
   'contentType' : string,
   'description' : [] | [string],
   'category' : ItemCategory,
+  'shapeCategory' : string,
   'photo' : ExternalBlob,
 }
 export type ExternalBlob = Uint8Array;
@@ -38,6 +39,7 @@ export interface Item {
   'sold' : boolean,
   'description' : string,
   'category' : ItemCategory,
+  'shapeCategory' : string,
   'photo' : ExternalBlob,
   'priceInCents' : bigint,
 }
@@ -116,6 +118,7 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addShapeCategory' : ActorMethod<[string], undefined>,
   'addToBasket' : ActorMethod<[Uint8Array], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'bulkUploadItems' : ActorMethod<[Array<BulkItemInput>], Array<Uint8Array>>,
@@ -135,6 +138,7 @@ export interface _SERVICE {
   'getItem' : ActorMethod<[Uint8Array], Item>,
   'getItems' : ActorMethod<[], Array<Item>>,
   'getItemsByCategory' : ActorMethod<[ItemCategory], Array<Item>>,
+  'getShapeCategories' : ActorMethod<[], Array<string>>,
   'getStorefrontHeroText' : ActorMethod<[], StorefrontHeroText>,
   'getStorefrontItems' : ActorMethod<[], [] | [StorefrontItems]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
@@ -144,6 +148,7 @@ export interface _SERVICE {
   'markItemsAsSold' : ActorMethod<[Array<Uint8Array>], undefined>,
   'publishItems' : ActorMethod<[Array<Uint8Array>], undefined>,
   'removeFromBasket' : ActorMethod<[Uint8Array], undefined>,
+  'renameShapeCategory' : ActorMethod<[string, string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setBranding' : ActorMethod<[Branding], undefined>,
   'setItemPrice' : ActorMethod<[Uint8Array, bigint], undefined>,

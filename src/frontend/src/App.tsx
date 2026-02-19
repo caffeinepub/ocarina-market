@@ -1,93 +1,113 @@
-import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useNavigate } from '@tanstack/react-router';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useGetBranding } from './hooks/useQueries';
+import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useBasket } from './hooks/useBasket';
-import { useState, useEffect } from 'react';
 import StorefrontPage from './pages/StorefrontPage';
 import ItemDetailPage from './pages/ItemDetailPage';
-import BasketPage from './pages/BasketPage';
-import AdminBulkUploadPage from './pages/AdminBulkUploadPage';
 import AdminPanelPage from './pages/AdminPanelPage';
+import AdminBulkUploadPage from './pages/AdminBulkUploadPage';
 import AdminBrandingPage from './pages/AdminBrandingPage';
+import AdminShapeCategoriesPage from './pages/AdminShapeCategoriesPage';
+import BasketPage from './pages/BasketPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailurePage from './pages/PaymentFailurePage';
 import LoginButton from './components/LoginButton';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingBasket } from 'lucide-react';
+import { SiX, SiFacebook, SiInstagram } from 'react-icons/si';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function Layout() {
-  const navigate = useNavigate();
-  const { data: branding } = useGetBranding();
   const { itemCount } = useBasket();
 
-  const storeName = branding?.appName || 'Ocarina Market';
-  const logoUrl = branding?.logo?.getDirectURL() || '/assets/generated/logo.dim_512x512.png';
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <button 
-            onClick={() => navigate({ to: '/' })}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src={logoUrl} 
-              alt={storeName} 
-              className="h-12 w-12 object-contain"
-              onError={(e) => {
-                e.currentTarget.src = '/assets/generated/logo.dim_512x512.png';
-              }}
-            />
-            <h1 className="text-2xl font-bold text-foreground">{storeName}</h1>
-          </button>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => navigate({ to: '/basket' })}
+          <a href="/" className="text-2xl font-bold tracking-tight hover:opacity-80 transition-opacity">
+            Ocarina Shop
+          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="/basket"
+              className="relative p-2 hover:bg-muted rounded-lg transition-colors"
+              aria-label="Shopping basket"
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingBasket className="h-6 w-6" />
               {itemCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                >
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {itemCount}
-                </Badge>
+                </span>
               )}
-            </Button>
+            </a>
             <LoginButton />
           </div>
         </div>
       </header>
-      
+
       <main className="flex-1">
         <Outlet />
       </main>
-      
+
       <footer className="border-t border-border bg-card/30 mt-auto">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} {storeName}. Built with ❤️ using{' '}
-            <a 
-              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              caffeine.ai
-            </a>
-          </p>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>© {new Date().getFullYear()}</span>
+              <span>•</span>
+              <span>Built with ❤️ using</span>
+              <a
+                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium hover:text-foreground transition-colors"
+              >
+                caffeine.ai
+              </a>
+            </div>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Twitter"
+              >
+                <SiX className="h-5 w-5" />
+              </a>
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Facebook"
+              >
+                <SiFacebook className="h-5 w-5" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Instagram"
+              >
+                <SiInstagram className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
-      
-      <ProfileSetupDialog />
+
       <Toaster />
+      <ProfileSetupDialog />
     </div>
   );
 }
@@ -102,9 +122,9 @@ const indexRoute = createRoute({
   component: StorefrontPage,
 });
 
-const itemDetailRoute = createRoute({
+const itemRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/items/$itemId',
+  path: '/item/$itemId',
   component: ItemDetailPage,
 });
 
@@ -132,6 +152,12 @@ const adminBrandingRoute = createRoute({
   component: AdminBrandingPage,
 });
 
+const adminShapeCategoriesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/shape-categories',
+  component: AdminShapeCategoriesPage,
+});
+
 const paymentSuccessRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/payment-success',
@@ -146,27 +172,22 @@ const paymentFailureRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  itemDetailRoute,
+  itemRoute,
   basketRoute,
   adminPanelRoute,
   adminUploadRoute,
   adminBrandingRoute,
+  adminShapeCategoriesRoute,
   paymentSuccessRoute,
   paymentFailureRoute,
 ]);
 
 const router = createRouter({ routeTree });
 
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
-
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-    </ThemeProvider>
+    </QueryClientProvider>
   );
 }

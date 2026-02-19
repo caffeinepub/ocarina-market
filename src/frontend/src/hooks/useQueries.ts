@@ -205,6 +205,53 @@ export function useUpdateAllPrintedItemDescriptions() {
   });
 }
 
+export function useGetShapeCategories() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['shapeCategories'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getShapeCategories();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAddShapeCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (category: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addShapeCategory(category);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shapeCategories'] });
+    },
+  });
+}
+
+export function useRenameShapeCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.renameShapeCategory(oldName, newName);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shapeCategories'] });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
+      queryClient.invalidateQueries({ queryKey: ['multipleItems'] });
+    },
+  });
+}
+
 export function useBulkUploadPhotos() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -213,10 +260,12 @@ export function useBulkUploadPhotos() {
     mutationFn: async ({ 
       files, 
       category,
+      shapeCategory,
       onProgress 
     }: { 
       files: File[]; 
       category: ItemCategory;
+      shapeCategory: string;
       onProgress?: (index: number, percentage: number) => void;
     }) => {
       if (!actor) throw new Error('Actor not available');
@@ -235,15 +284,13 @@ export function useBulkUploadPhotos() {
           }
         });
 
-        // Generate a simple title from filename
-        const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-
         itemsInput.push({
           photo: blob,
           contentType: file.type,
-          title,
-          description: undefined, // Backend will use default
+          title: shapeCategory,
+          description: undefined,
           category,
+          shapeCategory,
         });
       }
 

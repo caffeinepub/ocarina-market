@@ -1,17 +1,24 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "An e-commerce application for selling ocarinas with multiple product categories and customizable pricing",
-  "architectural_notes": [
-    "Product catalog supports multiple categories and subcategories",
-    "Pricing is category-based with different price points per product type"
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "App webpage frozen and not loading after Version 19 deployment"
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-create-an-admin-interface-that-allows-bulk-price-updates-by-category-enabling-future-price-changes-without-code-modifications",
-      "title": "Create an admin interface that allows bulk price updates by category, enabling future price changes without code modifications",
+      "id": "feature-diagnose-and-fix-the-root-cause-preventing-the-application-from-loading-or-rendering-any-content-on-the-webpage",
+      "title": "Diagnose and fix the root cause preventing the application from loading or rendering any content on the webpage",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-frontend-routing-and-react-component-rendering-pipeline-is-functioning-after-the-version-19-deployment",
+      "title": "Ensure the frontend routing and React component rendering pipeline is functioning after the Version 19 deployment",
       "reqIds": [
         "REQ-3"
       ],
@@ -20,47 +27,15 @@
   ],
   "new_feature_requests": [
     {
-      "id": "AR-1",
-      "summary": "Set 3D ocarinas to $9 and ceramic ocarinas to $19",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-2",
-      "summary": "Enable adding products to custom subcategories during upload",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Make product names editable and reflect their category names",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Allow editing price and name for individual items",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Update all items in the '3D Printed' category to have a price of $9.00 (900 cents)",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Update all items in the 'Ceramic' category to have a price of $19.00 (1900 cents)",
+      "summary": "Verify the backend actor is responding correctly to frontend requests and all canister endpoints are accessible",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Ocarina Store",
+  "projectName": "Fix app loading failure after deployment",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,9 +1,7 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Loader2, Settings } from 'lucide-react';
-import { useIsCallerAdmin } from '../hooks/useQueries';
-import { useNavigate } from '@tanstack/react-router';
+import { LogIn, LogOut, User, Settings, Upload, Tag } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +9,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useIsCallerAdmin } from '../hooks/useQueries';
+import { useNavigate } from '@tanstack/react-router';
 
 export default function LoginButton() {
   const { login, clear, loginStatus, identity } = useInternetIdentity();
+  const { data: isAdmin } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { data: isAdmin } = useIsCallerAdmin();
 
   const isAuthenticated = !!identity;
   const disabled = loginStatus === 'logging-in';
@@ -25,7 +25,6 @@ export default function LoginButton() {
     if (isAuthenticated) {
       await clear();
       queryClient.clear();
-      navigate({ to: '/' });
     } else {
       try {
         await login();
@@ -45,10 +44,11 @@ export default function LoginButton() {
         onClick={handleAuth}
         disabled={disabled}
         variant="default"
+        size="default"
       >
-        {disabled ? (
+        {loginStatus === 'logging-in' ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <LogIn className="mr-2 h-4 w-4 animate-pulse" />
             Logging in...
           </>
         ) : (
@@ -61,44 +61,37 @@ export default function LoginButton() {
     );
   }
 
-  if (isAdmin) {
-    return (
-      <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Settings className="mr-2 h-4 w-4" />
-              Admin
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="default">
+          <User className="mr-2 h-4 w-4" />
+          Account
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {isAdmin && (
+          <>
             <DropdownMenuItem onClick={() => navigate({ to: '/admin' })}>
               <Settings className="mr-2 h-4 w-4" />
               Admin Panel
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate({ to: '/admin/upload' })}>
-              <Settings className="mr-2 h-4 w-4" />
+              <Upload className="mr-2 h-4 w-4" />
               Bulk Upload
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleAuth}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+            <DropdownMenuItem onClick={() => navigate({ to: '/admin/shape-categories' })}>
+              <Tag className="mr-2 h-4 w-4" />
+              Shape Categories
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    );
-  }
-
-  return (
-    <Button
-      onClick={handleAuth}
-      disabled={disabled}
-      variant="outline"
-    >
-      <LogOut className="mr-2 h-4 w-4" />
-      Logout
-    </Button>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem onClick={handleAuth}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

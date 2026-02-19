@@ -1,42 +1,100 @@
 import { useState, useRef } from 'react';
-import { useIsCallerAdmin, useBulkUploadPhotos } from '../hooks/useQueries';
+import { useIsCallerAdmin, useBulkUploadPhotos, useGetShapeCategories } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 import AccessDeniedScreen from '../components/AccessDeniedScreen';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Upload, Loader2, CheckCircle2, XCircle, Image as ImageIcon, AlertCircle, Store } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ItemCategory } from '../backend';
+import { getLabelFromCategory } from '../utils/itemCategory';
 import { toast } from 'sonner';
-import { useNavigate } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { verifyBulkUpload } from '../utils/bulkUploadVerification';
-import { encodeItemId } from '../lib/idEncoding';
-import { getCategoryOptions, getCategoryFromLabel } from '../utils/itemCategory';
-
-interface UploadFile {
-  file: File;
-  preview: string;
-  status: 'pending' | 'uploading' | 'verifying' | 'success' | 'error';
-  progress: number;
-}
 
 export default function AdminBulkUploadPage() {
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const { data: shapeCategories, isLoading: categoriesLoading } = useGetShapeCategories();
   const { actor } = useActor();
   const bulkUpload = useBulkUploadPhotos();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
+
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<ItemCategory>(ItemCategory.ceramic);
+  const [selectedShapeCategory, setSelectedShapeCategory] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
-  const [uploadedItemIds, setUploadedItemIds] = useState<Uint8Array[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
-  const categoryOptions = getCategoryOptions();
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length !== files.length) {
+      toast.error('Some files were skipped (only images are allowed)');
+    }
+    
+    setSelectedFiles(imageFiles);
+    setUploadProgress({});
+    setVerificationComplete(false);
+  };
 
-  if (adminLoading) {
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error('Please select at least one image');
+      return;
+    }
+
+    if (!selectedShapeCategory) {
+      toast.error('Please select a shape subcategory');
+      return;
+    }
+
+    try {
+      const itemIds = await bulkUpload.mutateAsync({
+        files: selectedFiles,
+        category: selectedCategory,
+        shapeCategory: selectedShapeCategory,
+        onProgress: (index, percentage) => {
+          setUploadProgress(prev => ({ ...prev, [index]: percentage }));
+        },
+      });
+
+      toast.success(`Successfully uploaded ${itemIds.length} items`);
+
+      if (actor) {
+        setIsVerifying(true);
+        try {
+          await verifyBulkUpload(itemIds, actor);
+          setVerificationComplete(true);
+          toast.success('All items verified and accessible');
+        } catch (verifyError: any) {
+          console.error('Verification error:', verifyError);
+          toast.error(verifyError.message || 'Verification failed');
+        } finally {
+          setIsVerifying(false);
+        }
+      }
+
+      setSelectedFiles([]);
+      setUploadProgress({});
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload items');
+      setIsVerifying(false);
+    }
+  };
+
+  const overallProgress = selectedFiles.length > 0
+    ? Object.values(uploadProgress).reduce((sum, val) => sum + val, 0) / selectedFiles.length
+    : 0;
+
+  if (adminLoading || categoriesLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -48,221 +106,116 @@ export default function AdminBulkUploadPage() {
     return <AccessDeniedScreen />;
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const imageFiles = files.filter(f => f.type.startsWith('image/'));
-
-    if (imageFiles.length === 0) {
-      toast.error('Please select at least one image file');
-      return;
-    }
-
-    const newUploadFiles: UploadFile[] = imageFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      status: 'pending',
-      progress: 0,
-    }));
-
-    setUploadFiles(prev => [...prev, ...newUploadFiles]);
-  };
-
-  const handleUpload = async () => {
-    if (uploadFiles.length === 0) {
-      toast.error('Please select files to upload');
-      return;
-    }
-
-    if (!selectedCategory) {
-      toast.error('Please select a category before uploading');
-      return;
-    }
-
-    if (!actor) {
-      toast.error('Backend connection not available');
-      return;
-    }
-
-    setUploadFiles(prev => prev.map(f => ({ ...f, status: 'uploading' as const })));
-
-    try {
-      // Convert category label to backend enum
-      const category = getCategoryFromLabel(selectedCategory);
-
-      // Step 1: Upload files to backend
-      const itemIds = await bulkUpload.mutateAsync({
-        files: uploadFiles.map(uf => uf.file),
-        category,
-        onProgress: (index, percentage) => {
-          setUploadFiles(prev => prev.map((f, i) => 
-            i === index ? { ...f, progress: percentage } : f
-          ));
-        },
-      });
-
-      // Store the item IDs for later navigation
-      setUploadedItemIds(itemIds);
-
-      // Step 2: Verify uploads
-      setUploadFiles(prev => prev.map(f => ({ ...f, status: 'verifying' as const, progress: 100 })));
-
-      await verifyBulkUpload(itemIds, actor);
-
-      // Step 3: Invalidate caches to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['items'] });
-      await queryClient.invalidateQueries({ queryKey: ['storefrontItems'] });
-
-      // Step 4: Mark as success
-      setUploadFiles(prev => prev.map(f => ({ ...f, status: 'success' as const, progress: 100 })));
-      toast.success(`Successfully uploaded and verified ${uploadFiles.length} item(s)`);
-    } catch (error) {
-      console.error('Upload error:', error);
-      setUploadFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })));
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`Upload failed: ${errorMessage}. Please try again.`);
-    }
-  };
-
-  const handleClear = () => {
-    uploadFiles.forEach(uf => URL.revokeObjectURL(uf.preview));
-    setUploadFiles([]);
-    setUploadedItemIds([]);
-    setSelectedCategory('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleGoToAdmin = () => {
-    navigate({ to: '/admin' });
-  };
-
-  const handleGoToStorefront = () => {
-    navigate({ to: '/' });
-  };
-
-  const handleViewItem = (itemId: Uint8Array) => {
-    const encodedId = encodeItemId(itemId);
-    navigate({ to: '/items/$itemId', params: { itemId: encodedId } });
-  };
-
-  const isUploading = uploadFiles.some(f => f.status === 'uploading' || f.status === 'verifying');
-  const allSuccess = uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'success');
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
+          <Upload className="h-8 w-8" />
+          Bulk Photo Upload
+        </h1>
+        <p className="text-muted-foreground">
+          Upload multiple photos to create ocarina items. Items will be automatically published with names matching the selected shape subcategory.
+        </p>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-6 w-6" />
-            Bulk Photo Upload
-          </CardTitle>
+          <CardTitle>Upload Configuration</CardTitle>
           <CardDescription>
-            Upload multiple photos to create one ocarina item per photo. Each item will have an auto-generated description.
+            Select category, shape subcategory, and photos to upload
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Category Selection */}
           <div className="space-y-2">
-            <Label htmlFor="category-select" className="text-base font-medium">
-              Ocarina Category <span className="text-destructive">*</span>
-            </Label>
+            <Label htmlFor="category">Item Category</Label>
             <Select
               value={selectedCategory}
-              onValueChange={setSelectedCategory}
-              disabled={isUploading || allSuccess}
+              onValueChange={(value) => setSelectedCategory(value as ItemCategory)}
             >
-              <SelectTrigger id="category-select" className="w-full">
-                <SelectValue placeholder="Select a category" />
+              <SelectTrigger id="category">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {categoryOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
+                <SelectItem value={ItemCategory.ceramic}>
+                  {getLabelFromCategory(ItemCategory.ceramic)}
+                </SelectItem>
+                <SelectItem value={ItemCategory.printed}>
+                  {getLabelFromCategory(ItemCategory.printed)}
+                </SelectItem>
               </SelectContent>
             </Select>
-            {!selectedCategory && uploadFiles.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Please select a category before uploading
-              </p>
+          </div>
+
+          {/* Shape Subcategory Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="shape-category">Shape Subcategory</Label>
+            {!shapeCategories || shapeCategories.length === 0 ? (
+              <div className="p-4 border border-border rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  No shape subcategories available. Please add some in the Shape Categories management page.
+                </p>
+              </div>
+            ) : (
+              <Select
+                value={selectedShapeCategory}
+                onValueChange={setSelectedShapeCategory}
+              >
+                <SelectTrigger id="shape-category">
+                  <SelectValue placeholder="Select a shape subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shapeCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
-          {/* File Input */}
-          <div>
-            <input
+          {/* File Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="photos">Select Photos</Label>
+            <Input
               ref={fileInputRef}
+              id="photos"
               type="file"
               accept="image/*"
               multiple
               onChange={handleFileSelect}
-              className="hidden"
-              id="file-upload"
+              disabled={bulkUpload.isPending}
             />
-            <label htmlFor="file-upload">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-                asChild
-              >
-                <span>
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Select Photos
-                </span>
-              </Button>
-            </label>
+            {selectedFiles.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
           </div>
 
           {/* Preview Grid */}
-          {uploadFiles.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {uploadFiles.length} photo(s) selected
-                </p>
-                {!isUploading && !allSuccess && (
-                  <Button variant="ghost" size="sm" onClick={handleClear}>
-                    Clear All
-                  </Button>
-                )}
-              </div>
-
+          {selectedFiles.length > 0 && (
+            <div className="space-y-3">
+              <Label>Preview</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {uploadFiles.map((uf, index) => (
-                  <div key={index} className="relative">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
-                      <img
-                        src={uf.preview}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    {uf.status === 'uploading' && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center rounded-lg">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
-                        <Progress value={uf.progress} className="w-3/4" />
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="text-white text-sm font-medium">
+                          {Math.round(uploadProgress[index])}%
+                        </div>
                       </div>
                     )}
-                    {uf.status === 'verifying' && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center rounded-lg">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
-                        <p className="text-xs text-muted-foreground">Verifying...</p>
-                      </div>
-                    )}
-                    {uf.status === 'success' && (
-                      <div className="absolute inset-0 bg-primary/80 flex items-center justify-center rounded-lg">
-                        <CheckCircle2 className="h-8 w-8 text-primary-foreground" />
-                      </div>
-                    )}
-                    {uf.status === 'error' && (
-                      <div className="absolute inset-0 bg-destructive/80 flex items-center justify-center rounded-lg">
-                        <XCircle className="h-8 w-8 text-destructive-foreground" />
+                    {uploadProgress[index] === 100 && (
+                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                        <CheckCircle2 className="h-8 w-8 text-green-600" />
                       </div>
                     )}
                   </div>
@@ -271,94 +224,72 @@ export default function AdminBulkUploadPage() {
             </div>
           )}
 
-          {/* Upload Button */}
-          {uploadFiles.length > 0 && !allSuccess && (
-            <Button
-              onClick={handleUpload}
-              disabled={isUploading || !selectedCategory}
-              className="w-full"
-              size="lg"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {uploadFiles.some(f => f.status === 'verifying') 
-                    ? 'Verifying uploads...' 
-                    : `Uploading ${uploadFiles.length} item(s)...`}
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-5 w-5" />
-                  Upload {uploadFiles.length} item(s)
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* Success State - Items are Published */}
-          {allSuccess && (
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle2 className="h-16 w-16 text-primary" />
+          {/* Upload Progress */}
+          {bulkUpload.isPending && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Upload Progress</span>
+                <span className="font-medium">{Math.round(overallProgress)}%</span>
               </div>
-              <p className="text-lg font-semibold text-center">Upload Complete!</p>
-              
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Items Published and Live</AlertTitle>
-                <AlertDescription>
-                  Your {uploadFiles.length} item(s) have been successfully uploaded and are now <strong>published</strong>. 
-                  They should appear on the public storefront immediately.
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-center">Next Steps:</p>
-                
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleGoToStorefront}
-                    variant="default"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Store className="mr-2 h-5 w-5" />
-                    View Public Storefront
-                  </Button>
-
-                  <Button
-                    onClick={handleGoToAdmin}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
-                    Go to Admin Panel
-                  </Button>
-
-                  {uploadedItemIds.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground text-center">
-                        Or view individual items:
-                      </p>
-                      <div className="max-h-40 overflow-y-auto space-y-2">
-                        {uploadedItemIds.map((itemId, index) => (
-                          <Button
-                            key={index}
-                            onClick={() => handleViewItem(itemId)}
-                            variant="outline"
-                            className="w-full"
-                            size="sm"
-                          >
-                            View Item {index + 1}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <Progress value={overallProgress} />
             </div>
           )}
+
+          {/* Verification Status */}
+          {isVerifying && (
+            <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-muted/30">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm">Verifying uploaded items...</span>
+            </div>
+          )}
+
+          {verificationComplete && (
+            <div className="flex items-center gap-2 p-4 border border-green-600 rounded-lg bg-green-50 dark:bg-green-950/20">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <span className="text-sm text-green-700 dark:text-green-400">
+                All items uploaded and verified successfully
+              </span>
+            </div>
+          )}
+
+          {/* Upload Button */}
+          <Button
+            onClick={handleUpload}
+            disabled={bulkUpload.isPending || selectedFiles.length === 0 || !selectedShapeCategory || isVerifying}
+            className="w-full"
+            size="lg"
+          >
+            {bulkUpload.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Uploading {selectedFiles.length} item{selectedFiles.length !== 1 ? 's' : ''}...
+              </>
+            ) : isVerifying ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-5 w-5" />
+                Upload {selectedFiles.length} Item{selectedFiles.length !== 1 ? 's' : ''}
+              </>
+            )}
+          </Button>
+
+          {/* Info Message */}
+          <div className="flex items-start gap-2 p-4 border border-border rounded-lg bg-muted/30">
+            <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium mb-1">Upload Notes:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>All items will be automatically published</li>
+                <li>Item names will match the selected shape subcategory</li>
+                <li>Default descriptions will be assigned based on category</li>
+                <li>You can edit individual items after upload</li>
+              </ul>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

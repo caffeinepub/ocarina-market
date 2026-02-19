@@ -1,27 +1,26 @@
 import Map "mo:core/Map";
 import Storage "blob-storage/Storage";
 import Stripe "stripe/stripe";
-import AccessControl "authorization/access-control";
-
 import MixinStorage "blob-storage/Mixin";
-
+import List "mo:core/List";
+import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import OutCall "http-outcalls/outcall";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Blob "mo:core/Blob";
 import Iter "mo:core/Iter";
-import List "mo:core/List";
-import Migration "migration";
+import Text "mo:core/Text";
+import Array "mo:core/Array";
 
-(with migration = Migration.run)
+
+
 actor {
   include MixinStorage();
 
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Types
   public type ItemCategory = { #printed; #ceramic };
 
   public type Item = {
@@ -35,11 +34,12 @@ actor {
     published : Bool;
     createdBy : Principal;
     category : ItemCategory;
+    shapeCategory : Text;
   };
 
   public type MediaKind = {
     #image;
-    #model3d : { modelType : Text }; // e.g., "glb", "gltf" etc.
+    #model3d : { modelType : Text }; // e.g. "glb", "gltf" etc.
   };
 
   public type BrandingAsset = {
@@ -65,6 +65,7 @@ actor {
 
   public type UserProfile = {
     name : Text;
+    // Add other user metadata if needed
   };
 
   public type StorefrontItems = {
@@ -79,27 +80,26 @@ actor {
     description : ?Text;
     title : Text;
     category : ItemCategory;
+    shapeCategory : Text;
   };
 
   let descriptionExamples = [
-    "A beautiful handcrafted ceramic ocarina with a unique pattern and glossy finish.",
+    "A beautiful handcrafted ceramic instrument with a unique pattern and glossy finish.",
     "This sleek instrument features a blue glaze reminiscent of oceanic waves.",
-    "The intricate designs carved on this ocarina make it a true collector's item.",
-    "A perfect blend of functionality and art, this ocarina delivers exceptional sound.",
-    "Inspired by ancient wind instruments, this piece boasts timeless craftsmanship.",
+    "The intricate designs carved on this item make it a true collector's gem.",
+    "A perfect blend of functionality and art, this piece delivers exceptional utility.",
+    "Inspired by ancient wind instruments, this design boasts timeless craftsmanship.",
   ];
 
-  // Persistent state
+  let shapeCategories = Map.empty<Text, ()>();
   let items = Map.empty<Blob, Item>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   var stripeConfig : ?Stripe.StripeConfiguration = null;
   var branding : ?Branding = null;
   let baskets = Map.empty<Principal, [Blob]>();
 
-  // 3D printed item specific description for migration
   let printedItemDescription = "Expertly crafted 3D printed product with clean layer lines and precision detailing. Lightweight material ensures durability without compromising on structural integrity. Ideal for both functional use and display, showcasing the advanced capabilities of modern additive manufacturing. Finished with a professional touch for superior aesthetic appeal. Perfect for collectors and creators seeking high-quality, customizable items.";
 
-  // Basket management
   public shared ({ caller }) func addToBasket(itemId : Blob) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can add to basket");
@@ -158,7 +158,6 @@ actor {
     baskets.remove(caller);
   };
 
-  // Stripe checkout from basket
   public shared ({ caller }) func createCheckoutSessionFromBasket(
     successUrl : Text,
     cancelUrl : Text,
@@ -206,7 +205,6 @@ actor {
     };
   };
 
-  // Publishing (admin functionality)
   public shared ({ caller }) func publishItems(itemIds : [Blob]) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can publish items");
@@ -261,7 +259,6 @@ actor {
     );
   };
 
-  // Bulk update descriptions for 3D printed items (admin only)
   public shared ({ caller }) func updateAllPrintedItemDescriptions(newDescription : Text) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can update item descriptions");
@@ -279,7 +276,6 @@ actor {
     };
   };
 
-  // User profile management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
@@ -301,7 +297,6 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Admin functions
   public shared ({ caller }) func bulkUploadItems(itemsInput : [BulkItemInput]) : async [Blob] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can upload items");
@@ -322,7 +317,7 @@ actor {
   };
 
   public shared ({ caller }) func setItemPrice(itemId : Blob, priceInCents : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can set item prices");
     };
 
@@ -335,7 +330,6 @@ actor {
     };
   };
 
-  // Admin-only update all items
   public shared ({ caller }) func updateAllItemPricesByCategory() : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
@@ -350,7 +344,6 @@ actor {
     };
   };
 
-  // Branding admin
   public query ({ caller }) func getBranding() : async ?Branding {
     branding;
   };
@@ -369,9 +362,8 @@ actor {
     };
   };
 
-  // Admin update item description
   public shared ({ caller }) func updateItemDescription(itemId : Blob, newDescription : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can update item descriptions");
     };
     if (newDescription == "") {
@@ -387,9 +379,8 @@ actor {
     };
   };
 
-  // Admin update item photo and content type
   public shared ({ caller }) func updateItemPhoto(itemId : Blob, newPhoto : Storage.ExternalBlob, newContentType : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can update item photos");
     };
 
@@ -402,7 +393,6 @@ actor {
     };
   };
 
-  // Customer functions - require user authentication for checkout
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can perform checkout");
@@ -435,7 +425,6 @@ actor {
     await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
   };
 
-  // Public query functions (storefront)
   public query func getItem(id : Blob) : async Item {
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
@@ -477,7 +466,6 @@ actor {
     OutCall.transform(input);
   };
 
-  // Internal helpers
   func createStoreItem(itemInput : BulkItemInput, creator : Principal) : Blob {
     let description = switch (itemInput.description) {
       case (null) { getDefaultDescription() };
@@ -498,6 +486,7 @@ actor {
       published = true;
       createdBy = creator;
       category = itemInput.category;
+      shapeCategory = itemInput.shapeCategory;
     };
     items.add(itemInput.photo, item);
     itemInput.photo;
@@ -511,6 +500,55 @@ actor {
     switch (stripeConfig) {
       case (null) { Runtime.trap("Stripe needs to be first configured") };
       case (?config) { config };
+    };
+  };
+
+  // Shape category management functions - Admin only
+  public query func getShapeCategories() : async [Text] {
+    shapeCategories.keys().toArray();
+  };
+
+  public shared ({ caller }) func addShapeCategory(category : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can add shape categories");
+    };
+
+    if (category == "") {
+      Runtime.trap("Category name must not be empty");
+    };
+
+    if (shapeCategories.containsKey(category)) {
+      Runtime.trap("Category already exists");
+    };
+
+    shapeCategories.add(category, ());
+  };
+
+  public shared ({ caller }) func renameShapeCategory(oldName : Text, newName : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can rename shape categories");
+    };
+
+    if (newName == "") {
+      Runtime.trap("Category name must not be empty");
+    };
+
+    if (not shapeCategories.containsKey(oldName)) {
+      Runtime.trap("Original category does not exist");
+    };
+
+    if (shapeCategories.containsKey(newName)) {
+      Runtime.trap("Category already exists");
+    };
+
+    shapeCategories.add(newName, ());
+    shapeCategories.remove(oldName);
+
+    for ((id, item) in items.entries()) {
+      if (Text.equal(item.shapeCategory, oldName)) {
+        let updatedItem = { item with shapeCategory = newName };
+        items.add(id, updatedItem);
+      };
     };
   };
 };
